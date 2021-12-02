@@ -1,49 +1,54 @@
 import type { NextPage } from "next";
-import { useState } from "react";
 import { useQuery } from "react-query";
 import axios from "axios";
-import { Route } from "../src/types/Route";
-import { NewRoute } from "../src/components/NewRoute";
-import styles from "../src/styles/index.module.css";
+import { Segment } from "../src/types/Segment";
+import { SegmentComponent } from "../src/components/Segment";
+import styled from "styled-components";
+import { useCallback, useState } from "react";
+
+const Container = styled.div`
+  margin: 20px;
+`;
 
 const Home: NextPage = () => {
-  const [showCreateNewRoute, setShowCreateNewRoute] = useState(false);
+  const [newSegment, setNewSegment] = useState<Segment | undefined>();
 
-  const handleOpenCreateNewRoute = () => setShowCreateNewRoute(true);
-  const handleCloseCreateNewRoute = () => {
-    refetch();
-    setShowCreateNewRoute(false);
-  };
-
-  const handleOpenEditRoute = () => {};
-
-  const { data: routes = [], refetch } = useQuery("routes", async () => {
-    const { data } = await axios.get("/api/routes");
+  const { data: segments = [], refetch } = useQuery("segments", async () => {
+    const { data } = await axios.get("/api/segments");
     return data;
   });
-  const maxId = routes.reduce(
-    (max: number, route: Route) => Math.max(route.id, max),
-    1
-  );
+
+  const handleAddSegment = useCallback(() => {
+    const maxId =
+      segments.length > 0
+        ? Math.max(...segments.map((segment: Segment) => segment.id))
+        : 0;
+    setNewSegment({ id: maxId + 1, name: "" });
+  }, [segments]);
+
+  const handleSave = useCallback(() => {
+    setNewSegment(undefined);
+    refetch();
+  }, [refetch]);
 
   return (
-    <div className={styles.container}>
+    <Container>
+      <h1>SMO Speedrun Timer</h1>
+      <h3>Segments:</h3>
       <div>
-        <h4>Routes</h4>
-        {routes.map(({ name }: Route, index: number) => (
-          <div className={styles.flex} key={`${name}-${index}`}>
-            <div className={styles.marginRight}>{name}</div>
-            <button onClick={handleOpenEditRoute}>Edit</button>
-          </div>
+        {segments.map((segment: Segment, index: number) => (
+          <SegmentComponent
+            key={`${segment.name}-${index}`}
+            onSave={refetch}
+            segment={segment}
+          />
         ))}
-        <button className={styles.marginTop} onClick={handleOpenCreateNewRoute}>
-          Create new route
-        </button>
+        {newSegment && (
+          <SegmentComponent isNew onSave={handleSave} segment={newSegment} />
+        )}
       </div>
-      {showCreateNewRoute && (
-        <NewRoute id={maxId + 1} onClose={handleCloseCreateNewRoute} />
-      )}
-    </div>
+      {!newSegment && <button onClick={handleAddSegment}>Add Segment</button>}
+    </Container>
   );
 };
 
