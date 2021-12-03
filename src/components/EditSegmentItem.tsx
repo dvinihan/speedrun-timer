@@ -23,7 +23,7 @@ type Props = {
   segment: Segment;
 };
 
-export const EditableSegment = ({ isNew = false, onSave, segment }: Props) => {
+export const EditSegmentItem = ({ isNew = false, onSave, segment }: Props) => {
   const { id, name: initialName } = segment;
 
   const [name, setName] = useState(initialName);
@@ -69,7 +69,7 @@ export const EditableSegment = ({ isNew = false, onSave, segment }: Props) => {
         {showEdit ? (
           <>
             <NameInput onChange={handleEdit} value={name} />
-            <MediumButton onClick={() => performSave()}>Done</MediumButton>
+            <MediumButton onClick={() => performSave()}>Save</MediumButton>
             {!isNew && (
               <MediumButton onClick={handleDelete}>Delete</MediumButton>
             )}

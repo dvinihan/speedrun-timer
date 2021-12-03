@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "react-query";
 import styled from "styled-components";
 import { useAppContext } from "../context/AppContext";
+import { getNextSegmentId } from "../helpers";
 import { LargeButton, MediumButton } from "../styles/Buttons";
+import { Run } from "../types/Run";
 import { Segment } from "../types/Segment";
 
 const StartButton = styled(LargeButton)`
@@ -39,16 +41,45 @@ const Time = styled.div`
 export const Stopwatch = () => {
   const { isRunning, setIsRunning, currentSegmentId, setCurrentSegmentId } =
     useAppContext()!;
-
-  const [startedAtTime, setStartedAtTime] = useState(0);
-  const [time, setTime] = useState(0);
-  const [accruedTime, setAccruedTime] = useState(0);
   const [runId, setRunId] = useState<number | undefined>();
+  const [accruedTime, setAccruedTime] = useState(0);
 
   const { data: segments = [] } = useQuery<Segment[]>("segments", async () => {
     const { data } = await axios.get("/api/segments");
     return data;
   });
+  const { data: runs = [] } = useQuery<Run[]>("runs", async () => {
+    const { data } = await axios.get("/api/runs");
+    return data;
+  });
+
+  useEffect(() => {
+    if (runs.length === 0) {
+      return;
+    }
+
+    const latestRunId = Math.max(...runs.map((r) => r.id));
+    if (!latestRunId) {
+      return;
+    }
+    setRunId(latestRunId);
+
+    const latestRun = runs.find((r) => r.id === latestRunId)!;
+
+    const latestSegmentId = Math.max(...latestRun.segments.map((s) => s.id));
+    if (!latestSegmentId) {
+      return;
+    }
+
+    const latestSegment = latestRun.segments.find(
+      (s) => s.id === latestSegmentId
+    )!;
+
+    setAccruedTime(latestSegment.accruedTime);
+
+    const nextSegmentId = getNextSegmentId(segments, latestSegmentId);
+    setCurrentSegmentId(nextSegmentId);
+  }, [runs, segments, setCurrentSegmentId]);
 
   const isOnLastSegment = useMemo(() => {
     const maxId = Math.max(...segments.map((s) => s.id));
@@ -60,7 +91,7 @@ export const Stopwatch = () => {
     async () => {
       const { data } = await axios.post("/api/split", {
         segmentId: currentSegmentId,
-        runningTime: time,
+        accruedTime,
         runId,
       });
       return data;
@@ -68,13 +99,7 @@ export const Stopwatch = () => {
     {
       onSuccess: ({ runId: newRunId }) => {
         if (!isOnLastSegment) {
-          const sortedSegments = segments.sort((s) => s.id);
-          const currentSegmentIndex = sortedSegments.findIndex(
-            (s) => s.id === currentSegmentId
-          );
-          const nextSegmentIndex = currentSegmentIndex + 1;
-          const nextSegment = sortedSegments[nextSegmentIndex];
-          const nextSegmentId = nextSegment.id;
+          const nextSegmentId = getNextSegmentId(segments, currentSegmentId);
           setCurrentSegmentId(nextSegmentId);
 
           if (!runId) {
@@ -90,7 +115,7 @@ export const Stopwatch = () => {
 
     if (isRunning) {
       interval = setInterval(() => {
-        setTime(Date.now() - startedAtTime + accruedTime);
+        setAccruedTime((time) => time + 10);
       }, 10);
     } else if (interval) {
       clearInterval(interval);
@@ -101,38 +126,25 @@ export const Stopwatch = () => {
         clearInterval(interval);
       }
     };
-  }, [accruedTime, isRunning, startedAtTime]);
+  }, [isRunning]);
 
   const start = () => {
-    if (startedAtTime) {
-      resume();
-      return;
-    }
-
-    if (!isRunning) {
-      setStartedAtTime(Date.now());
-      setTime(accruedTime);
-      setIsRunning(true);
-      setCurrentSegmentId(segments[0].id);
-    }
+    setIsRunning(true);
+    setAccruedTime(0);
+    setCurrentSegmentId(segments[0].id);
   };
 
   const resume = () => {
-    setStartedAtTime(Date.now());
-    setTime(accruedTime);
     setIsRunning(true);
   };
 
   const stop = () => {
     setIsRunning(false);
-    setAccruedTime(time);
   };
 
   const reset = () => {
     setIsRunning(false);
-    setTime(0);
     setAccruedTime(0);
-    setStartedAtTime(0);
     setRunId(undefined);
   };
 
@@ -144,7 +156,6 @@ export const Stopwatch = () => {
     performSplit();
     setIsRunning(false);
     setAccruedTime(0);
-    setStartedAtTime(0);
     setRunId(undefined);
   };
 
@@ -154,7 +165,9 @@ export const Stopwatch = () => {
         {isRunning ? (
           <StopButton onClick={stop}>Stop</StopButton>
         ) : (
-          <StartButton onClick={start}>Start</StartButton>
+          <StartButton onClick={accruedTime ? resume : start}>
+            Start
+          </StartButton>
         )}
         <SplitButton
           color={isRunning ? "lightgreen" : ""}
@@ -165,10 +178,12 @@ export const Stopwatch = () => {
         </SplitButton>
       </HorizontalDiv>
       <Time>
-        <span>{("0" + Math.floor((time / 3600000) % 60)).slice(-2)}</span>:
-        <span>{("0" + Math.floor((time / 60000) % 60)).slice(-2)}</span>:
-        <span>{("0" + Math.floor((time / 1000) % 60)).slice(-2)}</span>:
-        <span>{Math.floor(time / 100) % 10}</span>
+        <span>
+          {("0" + Math.floor((accruedTime / 3600000) % 60)).slice(-2)}
+        </span>
+        :<span>{("0" + Math.floor((accruedTime / 60000) % 60)).slice(-2)}</span>
+        :<span>{("0" + Math.floor((accruedTime / 1000) % 60)).slice(-2)}</span>:
+        <span>{Math.floor(accruedTime / 100) % 10}</span>
       </Time>
       <MediumButton disabled={isRunning} onClick={reset}>
         Reset

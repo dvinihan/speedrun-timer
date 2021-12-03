@@ -1,8 +1,8 @@
 import type { NextPage } from "next";
 import styled from "styled-components";
 import { Stopwatch } from "../src/components/Stopwatch";
-import { EditSegments } from "../src/components/EditSegments";
-import { DisplaySegments } from "../src/components/DisplaySegments";
+import { EditSegmentList } from "../src/components/EditSegmentList";
+import { SegmentList } from "../src/components/SegmentList";
 
 const FlexDiv = styled.div`
   display: flex;
@@ -34,8 +34,8 @@ const Home: NextPage = () => {
       <h3>Segments:</h3>
       <FlexDiv>
         <SegmentsFlexItem>
-          <DisplaySegments />
-          <EditSegments />
+          <SegmentList />
+          <EditSegmentList />
         </SegmentsFlexItem>
         <StopwatchFlexItem>
           <Stopwatch />

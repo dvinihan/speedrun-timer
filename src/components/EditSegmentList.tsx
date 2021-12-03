@@ -4,10 +4,10 @@ import { useQuery } from "react-query";
 import { useAppContext } from "../context/AppContext";
 import { MediumButton } from "../styles/Buttons";
 import { Segment } from "../types/Segment";
-import { EditableSegment } from "./EditableSegment";
+import { EditSegmentItem } from "./EditSegmentItem";
 
-export const EditSegments = () => {
-  const { isRunning } = useAppContext()!;
+export const EditSegmentList = () => {
+  const { showEditSegments, setShowEditSegments } = useAppContext()!;
 
   const [newSegment, setNewSegment] = useState<Segment | undefined>();
 
@@ -29,22 +29,25 @@ export const EditSegments = () => {
     refetch();
   }, [refetch]);
 
-  if (isRunning) return null;
+  if (!showEditSegments) return null;
 
   return (
     <>
       <div>
         {segments.map((segment: Segment, index: number) => (
-          <EditableSegment
+          <EditSegmentItem
             key={`${segment.name}-${index}`}
             onSave={refetch}
             segment={segment}
           />
         ))}
         {newSegment && (
-          <EditableSegment isNew onSave={handleSave} segment={newSegment} />
+          <EditSegmentItem isNew onSave={handleSave} segment={newSegment} />
         )}
       </div>
+      <MediumButton onClick={() => setShowEditSegments(false)}>
+        Done Editing
+      </MediumButton>
       {!newSegment && (
         <MediumButton onClick={handleAddSegment}>Add Segment</MediumButton>
       )}
