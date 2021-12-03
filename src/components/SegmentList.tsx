@@ -2,7 +2,7 @@ import axios from "axios";
 import { useQuery } from "react-query";
 import { useAppContext } from "../context/AppContext";
 import { MediumButton } from "../styles/Buttons";
-import { Segment } from "../types/Segment";
+import { SegmentRow } from "../types/SegmentRow";
 import { SegmentItem } from "./SegmentItem";
 
 export const SegmentList = () => {
@@ -18,7 +18,7 @@ export const SegmentList = () => {
   return (
     <>
       <div>
-        {segments.map((segment: Segment, index: number) => (
+        {segments.map((segment: SegmentRow, index: number) => (
           <SegmentItem key={`${segment.name}-${index}`} segment={segment} />
         ))}
       </div>

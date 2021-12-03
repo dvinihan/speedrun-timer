@@ -1,5 +1,5 @@
 import { ChangeEvent, useState } from "react";
-import { Segment } from "../types/Segment";
+import { SegmentRow } from "../types/SegmentRow";
 import styled from "styled-components";
 import { useMutation } from "react-query";
 import axios from "axios";
@@ -20,7 +20,7 @@ const FlexDiv = styled.div`
 type Props = {
   isNew?: boolean;
   onSave: () => void;
-  segment: Segment;
+  segment: SegmentRow;
 };
 
 export const EditSegmentItem = ({ isNew = false, onSave, segment }: Props) => {

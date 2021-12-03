@@ -6,7 +6,7 @@ import { useAppContext } from "../context/AppContext";
 import { getNextSegmentId } from "../helpers";
 import { LargeButton, MediumButton } from "../styles/Buttons";
 import { Run } from "../types/Run";
-import { Segment } from "../types/Segment";
+import { SegmentRow } from "../types/SegmentRow";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -44,10 +44,13 @@ export const Stopwatch = () => {
   const [runId, setRunId] = useState<number | undefined>();
   const [accruedTime, setAccruedTime] = useState(0);
 
-  const { data: segments = [] } = useQuery<Segment[]>("segments", async () => {
-    const { data } = await axios.get("/api/segments");
-    return data;
-  });
+  const { data: segments = [] } = useQuery<SegmentRow[]>(
+    "segments",
+    async () => {
+      const { data } = await axios.get("/api/segments");
+      return data;
+    }
+  );
   const { data: runs = [] } = useQuery<Run[]>("runs", async () => {
     const { data } = await axios.get("/api/runs");
     return data;
@@ -71,14 +74,15 @@ export const Stopwatch = () => {
       return;
     }
 
-    const latestSegment = latestRun.segments.find(
-      (s) => s.id === latestSegmentId
-    )!;
-
-    setAccruedTime(latestSegment.accruedTime);
-
     const nextSegmentId = getNextSegmentId(segments, latestSegmentId);
-    setCurrentSegmentId(nextSegmentId);
+
+    if (nextSegmentId) {
+      const latestSegment = latestRun.segments.find(
+        (s) => s.id === latestSegmentId
+      )!;
+      setAccruedTime(latestSegment.accruedTime);
+      setCurrentSegmentId(nextSegmentId);
+    }
   }, [runs, segments, setCurrentSegmentId]);
 
   const isOnLastSegment = useMemo(() => {
@@ -100,7 +104,7 @@ export const Stopwatch = () => {
       onSuccess: ({ runId: newRunId }) => {
         if (!isOnLastSegment) {
           const nextSegmentId = getNextSegmentId(segments, currentSegmentId);
-          setCurrentSegmentId(nextSegmentId);
+          setCurrentSegmentId(nextSegmentId!);
 
           if (!runId) {
             setRunId(newRunId);
@@ -166,7 +170,7 @@ export const Stopwatch = () => {
           <StopButton onClick={stop}>Stop</StopButton>
         ) : (
           <StartButton onClick={accruedTime ? resume : start}>
-            Start
+            {accruedTime ? "Resume" : "Start"}
           </StartButton>
         )}
         <SplitButton

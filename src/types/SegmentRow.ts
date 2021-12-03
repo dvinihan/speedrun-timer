@@ -1,4 +1,4 @@
-export type Segment = {
+export type SegmentRow = {
   id: number;
   name: string;
 };

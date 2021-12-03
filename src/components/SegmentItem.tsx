@@ -1,8 +1,8 @@
-import { Segment } from "../types/Segment";
+import { SegmentRow } from "../types/SegmentRow";
 import { Name, SegmentDiv } from "../styles/Segments";
 
 type Props = {
-  segment: Segment;
+  segment: SegmentRow;
 };
 
 export const SegmentItem = ({ segment }: Props) => {

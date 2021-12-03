@@ -3,13 +3,13 @@ import { useCallback, useState } from "react";
 import { useQuery } from "react-query";
 import { useAppContext } from "../context/AppContext";
 import { MediumButton } from "../styles/Buttons";
-import { Segment } from "../types/Segment";
+import { SegmentRow } from "../types/SegmentRow";
 import { EditSegmentItem } from "./EditSegmentItem";
 
 export const EditSegmentList = () => {
   const { showEditSegments, setShowEditSegments } = useAppContext()!;
 
-  const [newSegment, setNewSegment] = useState<Segment | undefined>();
+  const [newSegment, setNewSegment] = useState<SegmentRow | undefined>();
 
   const { data: segments = [], refetch } = useQuery("segments", async () => {
     const { data } = await axios.get("/api/segments");
@@ -19,7 +19,7 @@ export const EditSegmentList = () => {
   const handleAddSegment = useCallback(() => {
     const maxId =
       segments.length > 0
-        ? Math.max(...segments.map((segment: Segment) => segment.id))
+        ? Math.max(...segments.map((segment: SegmentRow) => segment.id))
         : 0;
     setNewSegment({ id: maxId + 1, name: "" });
   }, [segments]);
@@ -34,7 +34,7 @@ export const EditSegmentList = () => {
   return (
     <>
       <div>
-        {segments.map((segment: Segment, index: number) => (
+        {segments.map((segment: SegmentRow, index: number) => (
           <EditSegmentItem
             key={`${segment.name}-${index}`}
             onSave={refetch}
