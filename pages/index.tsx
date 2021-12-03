@@ -5,9 +5,22 @@ import { Segment } from "../src/types/Segment";
 import { SegmentComponent } from "../src/components/Segment";
 import styled from "styled-components";
 import { useCallback, useState } from "react";
+import { Stopwatch } from "../src/components/Stopwatch";
 
 const Container = styled.div`
   margin: 20px;
+  display: flex;
+`;
+
+const SegmentsFlexItem = styled.div`
+  flex: 1;
+`;
+
+const StopwatchFlexItem = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 const Home: NextPage = () => {
@@ -33,21 +46,26 @@ const Home: NextPage = () => {
 
   return (
     <Container>
-      <h1>SMO Speedrun Timer</h1>
-      <h3>Segments:</h3>
-      <div>
-        {segments.map((segment: Segment, index: number) => (
-          <SegmentComponent
-            key={`${segment.name}-${index}`}
-            onSave={refetch}
-            segment={segment}
-          />
-        ))}
-        {newSegment && (
-          <SegmentComponent isNew onSave={handleSave} segment={newSegment} />
-        )}
-      </div>
-      {!newSegment && <button onClick={handleAddSegment}>Add Segment</button>}
+      <SegmentsFlexItem>
+        <h1>SMO Speedrun Timer</h1>
+        <h3>Segments:</h3>
+        <div>
+          {segments.map((segment: Segment, index: number) => (
+            <SegmentComponent
+              key={`${segment.name}-${index}`}
+              onSave={refetch}
+              segment={segment}
+            />
+          ))}
+          {newSegment && (
+            <SegmentComponent isNew onSave={handleSave} segment={newSegment} />
+          )}
+        </div>
+        {!newSegment && <button onClick={handleAddSegment}>Add Segment</button>}
+      </SegmentsFlexItem>
+      <StopwatchFlexItem>
+        <Stopwatch />
+      </StopwatchFlexItem>
     </Container>
   );
 };
