@@ -7,12 +7,13 @@ type Props = {
   segment: Segment;
 };
 
-export const DisplayableSegment = ({ isNew = false, segment }: Props) => {
+export const DisplayableSegment = ({ segment }: Props) => {
   const { name } = segment;
 
   return (
     <SegmentDiv>
       <Name>{name}</Name>
+      <div>---time---</div>
     </SegmentDiv>
   );
 };

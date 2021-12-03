@@ -1,9 +1,10 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "react-query";
 import styled from "styled-components";
 import { useAppContext } from "../context/AppContext";
 import { LargeButton, MediumButton } from "../styles/Buttons";
+import { Segment } from "../types/Segment";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -36,27 +37,60 @@ const Time = styled.div`
 `;
 
 export const Stopwatch = () => {
-  const { isRunning, setIsRunning, setCurrentSegmentId } = useAppContext()!;
+  const { isRunning, setIsRunning, currentSegmentId, setCurrentSegmentId } =
+    useAppContext()!;
 
   const [startedAtTime, setStartedAtTime] = useState(0);
   const [time, setTime] = useState(0);
-  const [cachedTime, setCachedTime] = useState(0);
+  const [accruedTime, setAccruedTime] = useState(0);
+  const [runId, setRunId] = useState<number | undefined>();
 
-  const { data: segments = [] } = useQuery("segments", async () => {
+  const { data: segments = [] } = useQuery<Segment[]>("segments", async () => {
     const { data } = await axios.get("/api/segments");
     return data;
   });
 
-  const { mutate } = useMutation("split", async () => {
-    await axios.post("/api/split", {});
-  });
+  const isOnLastSegment = useMemo(() => {
+    const maxId = Math.max(...segments.map((s) => s.id));
+    return maxId === currentSegmentId;
+  }, [currentSegmentId, segments]);
+
+  const { mutate: performSplit } = useMutation(
+    "split",
+    async () => {
+      const { data } = await axios.post("/api/split", {
+        segmentId: currentSegmentId,
+        runningTime: time,
+        runId,
+      });
+      return data;
+    },
+    {
+      onSuccess: ({ runId: newRunId }) => {
+        if (!isOnLastSegment) {
+          const sortedSegments = segments.sort((s) => s.id);
+          const currentSegmentIndex = sortedSegments.findIndex(
+            (s) => s.id === currentSegmentId
+          );
+          const nextSegmentIndex = currentSegmentIndex + 1;
+          const nextSegment = sortedSegments[nextSegmentIndex];
+          const nextSegmentId = nextSegment.id;
+          setCurrentSegmentId(nextSegmentId);
+
+          if (!runId) {
+            setRunId(newRunId);
+          }
+        }
+      },
+    }
+  );
 
   useEffect(() => {
     let interval: NodeJS.Timer | undefined;
 
     if (isRunning) {
       interval = setInterval(() => {
-        setTime(Date.now() - startedAtTime + cachedTime);
+        setTime(Date.now() - startedAtTime + accruedTime);
       }, 10);
     } else if (interval) {
       clearInterval(interval);
@@ -67,30 +101,52 @@ export const Stopwatch = () => {
         clearInterval(interval);
       }
     };
-  }, [cachedTime, isRunning, startedAtTime]);
+  }, [accruedTime, isRunning, startedAtTime]);
 
   const start = () => {
+    if (startedAtTime) {
+      resume();
+      return;
+    }
+
     if (!isRunning) {
       setStartedAtTime(Date.now());
-      setTime(cachedTime);
+      setTime(accruedTime);
       setIsRunning(true);
       setCurrentSegmentId(segments[0].id);
     }
   };
 
+  const resume = () => {
+    setStartedAtTime(Date.now());
+    setTime(accruedTime);
+    setIsRunning(true);
+  };
+
   const stop = () => {
     setIsRunning(false);
-    setCachedTime(time);
+    setAccruedTime(time);
   };
 
   const reset = () => {
     setIsRunning(false);
     setTime(0);
+    setAccruedTime(0);
     setStartedAtTime(0);
-    setCachedTime(0);
+    setRunId(undefined);
   };
 
-  const split = () => {};
+  const split = () => {
+    performSplit();
+  };
+
+  const finish = () => {
+    performSplit();
+    setIsRunning(false);
+    setAccruedTime(0);
+    setStartedAtTime(0);
+    setRunId(undefined);
+  };
 
   return (
     <VerticalDiv>
@@ -103,9 +159,9 @@ export const Stopwatch = () => {
         <SplitButton
           color={isRunning ? "lightgreen" : ""}
           disabled={!isRunning}
-          onClick={split}
+          onClick={isOnLastSegment ? finish : split}
         >
-          Split
+          {isOnLastSegment ? "Finish" : "Split"}
         </SplitButton>
       </HorizontalDiv>
       <Time>
