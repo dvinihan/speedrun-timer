@@ -4,26 +4,17 @@ import styled from "styled-components";
 import { useMutation } from "react-query";
 import axios from "axios";
 import ReactModal from "react-modal";
+import { MediumButton } from "../styles/Buttons";
+import { Name, NameInput, SegmentDiv } from "../styles/Segments";
 
 ReactModal.setAppElement("#__next");
 
 const FlexDiv = styled.div`
   display: flex;
+  justify-content: space-between;
   align-items: center;
   margin-top: 10px;
   margin-bottom: 10px;
-`;
-
-const Name = styled.div`
-  margin-right: 10px;
-`;
-const NameInput = styled.input`
-  margin-right: 10px;
-`;
-
-const MarginButton = styled.button`
-  margin-right: 5px;
-  margin-left: 5px;
 `;
 
 type Props = {
@@ -32,7 +23,7 @@ type Props = {
   segment: Segment;
 };
 
-export const SegmentComponent = ({ isNew = false, onSave, segment }: Props) => {
+export const EditableSegment = ({ isNew = false, onSave, segment }: Props) => {
   const { id, name: initialName } = segment;
 
   const [name, setName] = useState(initialName);
@@ -74,32 +65,32 @@ export const SegmentComponent = ({ isNew = false, onSave, segment }: Props) => {
 
   return (
     <>
-      <FlexDiv>
+      <SegmentDiv>
         {showEdit ? (
           <>
             <NameInput onChange={handleEdit} value={name} />
-            <MarginButton onClick={() => performSave()}>Done</MarginButton>
+            <MediumButton onClick={() => performSave()}>Done</MediumButton>
             {!isNew && (
-              <MarginButton onClick={handleDelete}>Delete</MarginButton>
+              <MediumButton onClick={handleDelete}>Delete</MediumButton>
             )}
           </>
         ) : (
           <>
             <Name>{name}</Name>
-            <MarginButton onClick={() => setShowEdit(true)}>Edit</MarginButton>
+            <MediumButton onClick={() => setShowEdit(true)}>Edit</MediumButton>
           </>
         )}
-      </FlexDiv>
+      </SegmentDiv>
       <ReactModal
         isOpen={showDeleteModal}
         onAfterClose={() => setShowDeleteModal(false)}
       >
         <FlexDiv>
           Are you sure you want to delete the &quot;{initialName}&quot; segment?
-          <MarginButton onClick={() => performDelete()}>Yes</MarginButton>
-          <MarginButton onClick={() => setShowDeleteModal(false)}>
+          <MediumButton onClick={() => performDelete()}>Yes</MediumButton>
+          <MediumButton onClick={() => setShowDeleteModal(false)}>
             No!
-          </MarginButton>
+          </MediumButton>
         </FlexDiv>
       </ReactModal>
     </>
