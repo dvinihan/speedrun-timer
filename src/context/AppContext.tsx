@@ -7,6 +7,8 @@ type AppContextTypes = {
   setIsRunning: (isRunning: boolean) => void;
   showEditSegments: boolean;
   setShowEditSegments: (showEditSegments: boolean) => void;
+  runId: number | undefined;
+  setRunId: (id?: number) => void;
 };
 
 const AppContext = createContext<AppContextTypes | undefined>(undefined);
@@ -15,6 +17,7 @@ export const AppContextProvider = ({ children }: { children: any }) => {
   const [currentSegmentId, setCurrentSegmentId] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [showEditSegments, setShowEditSegments] = useState(false);
+  const [runId, setRunId] = useState<number | undefined>();
 
   return (
     <AppContext.Provider
@@ -25,6 +28,8 @@ export const AppContextProvider = ({ children }: { children: any }) => {
         setIsRunning,
         showEditSegments,
         setShowEditSegments,
+        runId,
+        setRunId,
       }}
     >
       {children}

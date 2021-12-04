@@ -6,14 +6,17 @@ export const SegmentDiv = styled.div`
   align-items: center;
   margin-top: 10px;
   margin-bottom: 10px;
-  background-color: lightgray;
   padding: 10px;
   height: 64px;
+  border: ${(props: { isActive?: boolean }) =>
+    props.isActive ? "5px solid black" : "initial"};
+  background-color: ${(props: { isActive?: boolean }) =>
+    props.isActive ? "lightblue" : "lightgray"};
 `;
 
 export const Name = styled.div`
   margin-right: 10px;
-  font-size: medium;
+  font-size: large;
 `;
 
 export const NameInput = styled.input`

@@ -12,3 +12,15 @@ export const getNextSegmentId = (
   const nextSegment = sortedSegments[nextSegmentIndex];
   return nextSegment?.id;
 };
+
+export const getDisplayTime = (time?: number) => {
+  if (time === undefined) {
+    return "--";
+  }
+  const hours = ("0" + Math.floor((time / 3600000) % 60)).slice(-2);
+  const minutes = ("0" + Math.floor((time / 60000) % 60)).slice(-2);
+  const seconds = ("0" + Math.floor((time / 1000) % 60)).slice(-2);
+  const deciSeconds = Math.floor(time / 100) % 10;
+
+  return `${hours}:${minutes}:${seconds}:${deciSeconds}`;
+};

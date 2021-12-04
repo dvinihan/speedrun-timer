@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "react-query";
 import styled from "styled-components";
 import { useAppContext } from "../context/AppContext";
-import { getNextSegmentId } from "../helpers";
+import { getDisplayTime, getNextSegmentId } from "../helpers";
 import { LargeButton, MediumButton } from "../styles/Buttons";
 import { Run } from "../types/Run";
 import { SegmentRow } from "../types/SegmentRow";
@@ -39,9 +39,14 @@ const Time = styled.div`
 `;
 
 export const Stopwatch = () => {
-  const { isRunning, setIsRunning, currentSegmentId, setCurrentSegmentId } =
-    useAppContext()!;
-  const [runId, setRunId] = useState<number | undefined>();
+  const {
+    isRunning,
+    setIsRunning,
+    currentSegmentId,
+    setCurrentSegmentId,
+    runId,
+    setRunId,
+  } = useAppContext()!;
   const [accruedTime, setAccruedTime] = useState(0);
 
   const { data: segments = [] } = useQuery<SegmentRow[]>(
@@ -51,10 +56,13 @@ export const Stopwatch = () => {
       return data;
     }
   );
-  const { data: runs = [] } = useQuery<Run[]>("runs", async () => {
-    const { data } = await axios.get("/api/runs");
-    return data;
-  });
+  const { data: runs = [], refetch: refetchRuns } = useQuery<Run[]>(
+    "runs",
+    async () => {
+      const { data } = await axios.get("/api/runs");
+      return data;
+    }
+  );
 
   useEffect(() => {
     if (runs.length === 0) {
@@ -76,14 +84,16 @@ export const Stopwatch = () => {
 
     const nextSegmentId = getNextSegmentId(segments, latestSegmentId);
 
+    const latestSegment = latestRun.segments.find(
+      (s) => s.id === latestSegmentId
+    )!;
+    setAccruedTime(latestSegment.accruedTime);
     if (nextSegmentId) {
-      const latestSegment = latestRun.segments.find(
-        (s) => s.id === latestSegmentId
-      )!;
-      setAccruedTime(latestSegment.accruedTime);
       setCurrentSegmentId(nextSegmentId);
+    } else {
+      setCurrentSegmentId(-1);
     }
-  }, [runs, segments, setCurrentSegmentId]);
+  }, [runs, segments, setCurrentSegmentId, setRunId]);
 
   const isOnLastSegment = useMemo(() => {
     const maxId = Math.max(...segments.map((s) => s.id));
@@ -110,6 +120,8 @@ export const Stopwatch = () => {
             setRunId(newRunId);
           }
         }
+
+        refetchRuns();
       },
     }
   );
@@ -150,6 +162,7 @@ export const Stopwatch = () => {
     setIsRunning(false);
     setAccruedTime(0);
     setRunId(undefined);
+    setCurrentSegmentId(0);
   };
 
   const split = () => {
@@ -161,6 +174,7 @@ export const Stopwatch = () => {
     setIsRunning(false);
     setAccruedTime(0);
     setRunId(undefined);
+    setCurrentSegmentId(0);
   };
 
   return (
@@ -169,7 +183,10 @@ export const Stopwatch = () => {
         {isRunning ? (
           <StopButton onClick={stop}>Stop</StopButton>
         ) : (
-          <StartButton onClick={accruedTime ? resume : start}>
+          <StartButton
+            disabled={currentSegmentId === -1}
+            onClick={accruedTime ? resume : start}
+          >
             {accruedTime ? "Resume" : "Start"}
           </StartButton>
         )}
@@ -181,14 +198,8 @@ export const Stopwatch = () => {
           {isOnLastSegment ? "Finish" : "Split"}
         </SplitButton>
       </HorizontalDiv>
-      <Time>
-        <span>
-          {("0" + Math.floor((accruedTime / 3600000) % 60)).slice(-2)}
-        </span>
-        :<span>{("0" + Math.floor((accruedTime / 60000) % 60)).slice(-2)}</span>
-        :<span>{("0" + Math.floor((accruedTime / 1000) % 60)).slice(-2)}</span>:
-        <span>{Math.floor(accruedTime / 100) % 10}</span>
-      </Time>
+      {currentSegmentId === -1 && <Time>Done!</Time>}
+      <Time>{getDisplayTime(accruedTime)}</Time>
       <MediumButton disabled={isRunning} onClick={reset}>
         Reset
       </MediumButton>
