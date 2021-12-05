@@ -19,10 +19,12 @@ if (!MONGODB_DB) {
  * in development. This prevents connections growing exponentially
  * during API Route usage.
  */
+// @ts-ignore
 let cached = global.mongo;
 
 if (!cached) {
   // eslint-disable-next-line no-multi-assign
+  // @ts-ignore
   cached = global.mongo = { conn: null, promise: null };
 }
 
