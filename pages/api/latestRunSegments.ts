@@ -4,30 +4,34 @@ import { RunSegment } from "../../src/types/RunSegment";
 import connectToDatabase from "../../src/util/mongodb";
 
 export type RunSegmentsData = {
-  runSegments: RunSegment[];
+  latestRunSegments: RunSegment[];
   totalTime: number;
 };
 
-const getRunSegments = async (
+const getLatestRunSegments = async (
   req: NextApiRequest,
   res: NextApiResponse<RunSegmentsData>
 ) => {
   const db = await connectToDatabase();
 
-  const { runId } = req.body;
-
-  const findQuery = runId ? { runId } : {};
-
   const runSegments = await db
     .collection<RunSegment>(RUN_SEGMENT_COLLECTION_NAME)
-    .find(findQuery)
+    .find()
     .toArray();
 
-  const totalTime = runSegments.reduce(
+  const latestRunId = runSegments.reduce(
+    (max, runSegment) => (runSegment.runId > max ? runSegment.runId : max),
+    0
+  );
+  const latestRunSegments = runSegments.filter(
+    (runSegment) => runSegment.runId === latestRunId
+  );
+
+  const totalTime = latestRunSegments.reduce(
     (total, runSegment) => total + runSegment.segmentTime,
     0
   );
-  res.json({ runSegments, totalTime });
+  res.json({ latestRunSegments, totalTime });
 };
 
-export default getRunSegments;
+export default getLatestRunSegments;

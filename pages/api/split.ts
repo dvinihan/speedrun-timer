@@ -82,12 +82,12 @@ const createNewRun = async (db: Db, body: SplitRequestBody) => {
   const { segmentId, segmentTime, isCompleted } = body;
 
   const maxRunIdList = await db
-    .collection(RUN_SEGMENT_COLLECTION_NAME)
+    .collection<RunSegment>(RUN_SEGMENT_COLLECTION_NAME)
     .find()
     .sort({ runId: -1 })
     .limit(1)
     .toArray();
-  const maxId = maxRunIdList[0]?.id ?? 0;
+  const maxId = maxRunIdList[0]?.runId ?? 0;
   const newId = maxId + 1;
 
   await createNewSegmentForExistingRun(

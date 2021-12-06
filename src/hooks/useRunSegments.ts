@@ -1,11 +1,11 @@
 import { useMemo } from "react";
-import { useRunSegmentsQuery } from "./useRunSegmentsQuery";
+import { useLatestRunSegmentsQuery } from "./useLatestRunSegmentsQuery";
 
 export const useRunSegments = () => {
-  const { data: runSegmentsResponse } = useRunSegmentsQuery();
+  const { data: runSegmentsResponse } = useLatestRunSegmentsQuery();
 
   return useMemo(
-    () => runSegmentsResponse?.runSegments ?? [],
-    [runSegmentsResponse?.runSegments]
+    () => runSegmentsResponse?.latestRunSegments ?? [],
+    [runSegmentsResponse?.latestRunSegments]
   );
 };

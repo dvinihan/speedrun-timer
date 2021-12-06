@@ -4,12 +4,12 @@ import { useMutation } from "react-query";
 import styled from "styled-components";
 import { SplitData, SplitRequestBody } from "../../pages/api/split";
 import { useAppContext } from "../context/AppContext";
-import { getDisplayTime, getNextSegmentId } from "../helpers";
+import { getDisplayTime } from "../helpers";
 import { useCurrentSegment } from "../hooks/useCurrentSegment";
 import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
 import { useLatestRunSegment } from "../hooks/useLatestRunSegment";
 import { useRunId } from "../hooks/useRunId";
-import { useRunSegmentsQuery } from "../hooks/useRunSegmentsQuery";
+import { useLatestRunSegmentsQuery } from "../hooks/useLatestRunSegmentsQuery";
 import { useSegments } from "../hooks/useSegments";
 import { LargeButton, MediumButton } from "../styles/Buttons";
 
@@ -54,7 +54,7 @@ export const Stopwatch = () => {
   const currentSegment = useCurrentSegment();
 
   const segments = useSegments();
-  const { refetch: refetchRunSegments } = useRunSegmentsQuery({
+  const { refetch: refetchRunSegments } = useLatestRunSegmentsQuery({
     onSuccess: (data) => {
       if (data) {
         const { totalTime } = data;
@@ -89,6 +89,10 @@ export const Stopwatch = () => {
   const { mutate: performSplit } = useMutation(
     "split",
     async ({ isCompleted }: { isCompleted: boolean }) => {
+      const segmentTime =
+        Date.now() - startedAtTime + (currentSegment?.segmentTime ?? 0);
+      setStartedAtTime(Date.now());
+
       const { data } = await axios.post<
         SplitData,
         AxiosResponse<SplitData>,
@@ -96,8 +100,7 @@ export const Stopwatch = () => {
       >("/api/split", {
         runId,
         segmentId: currentSegmentId!,
-        segmentTime:
-          Date.now() - startedAtTime + (currentSegment?.segmentTime ?? 0),
+        segmentTime,
         isCompleted,
       });
       return data;
@@ -124,10 +127,21 @@ export const Stopwatch = () => {
     performSplit({ isCompleted: false });
   };
 
-  const reset = () => {
+  const reset = async () => {
     setIsRunning(false);
     setStartedAtTime(0);
     setRunningTime(0);
+
+    await axios.post<SplitData, AxiosResponse<SplitData>, SplitRequestBody>(
+      "/api/split",
+      {
+        runId: (runId ?? 0) + 1,
+        segmentId: segments[0].id,
+        segmentTime: 0,
+        isCompleted: false,
+      }
+    );
+    refetchRunSegments();
   };
 
   const split = () => {
@@ -172,9 +186,9 @@ export const Stopwatch = () => {
       </HorizontalDiv>
       {isFinished && <Time>Done!</Time>}
       <Time>{getDisplayTime(runningTime)}</Time>
-      {/* <MediumButton disabled={isRunning} onClick={reset}>
+      <MediumButton disabled={isRunning} onClick={reset}>
         Reset
-      </MediumButton> */}
+      </MediumButton>
     </VerticalDiv>
   );
 };

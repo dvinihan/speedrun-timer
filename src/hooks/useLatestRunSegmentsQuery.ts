@@ -1,18 +1,18 @@
 import axios from "axios";
 import { useQuery } from "react-query";
-import { RunSegmentsData } from "../../pages/api/runSegments";
+import { RunSegmentsData } from "../../pages/api/latestRunSegments";
 
 type OnSuccessType = (data: RunSegmentsData) => Promise<unknown> | void;
 
-export const useRunSegmentsQuery = ({
+export const useLatestRunSegmentsQuery = ({
   onSuccess,
 }: {
   onSuccess?: OnSuccessType;
 } = {}) =>
   useQuery<RunSegmentsData>(
-    ["runSegments"],
+    ["latestRunSegments"],
     async () => {
-      const { data } = await axios.get(`/api/runSegments`);
+      const { data } = await axios.get(`/api/latestRunSegments`);
       return data;
     },
     { onSuccess }
