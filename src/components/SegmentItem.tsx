@@ -1,10 +1,9 @@
 import { SegmentRow } from "../types/SegmentRow";
 import { Name, SegmentDiv } from "../styles/Segments";
-import { useAppContext } from "../context/AppContext";
-import { useQuery } from "react-query";
-import { Run } from "../types/Run";
-import axios from "axios";
 import { getDisplayTime } from "../helpers";
+import { useRunSegments } from "../hooks/useRunSegments";
+import { useRunId } from "../hooks/useRunId";
+import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
 
 type Props = {
   segment: SegmentRow;
@@ -13,20 +12,20 @@ type Props = {
 export const SegmentItem = ({ segment }: Props) => {
   const { name, id } = segment;
 
-  const { currentSegmentId, runId } = useAppContext()!;
+  const runId = useRunId();
+  const runSegments = useRunSegments();
+  const currentRunSegmentId = useCurrentSegmentId();
+  const thisRunSegment = runSegments.find(
+    (runSegment) => runSegment.runId === runId && runSegment.segmentId === id
+  );
 
-  const { data: runs = [] } = useQuery<Run[]>("runs", async () => {
-    const { data } = await axios.get("/api/runs");
-    return data;
-  });
-
-  const currentRun = runs.find((r) => r.id === runId);
-  const currentRunSegment = currentRun?.segments.find((s) => s.id === id);
+  const isActive = currentRunSegmentId === id;
+  const shouldCollapse = !thisRunSegment?.isCompleted && !isActive;
 
   return (
-    <SegmentDiv isActive={id === currentSegmentId}>
+    <SegmentDiv isActive={isActive} shouldCollapse={shouldCollapse}>
       <Name>{name}</Name>
-      <div>{getDisplayTime(currentRunSegment?.segmentTime)}</div>
+      <div>{getDisplayTime(thisRunSegment?.segmentTime)}</div>
     </SegmentDiv>
   );
 };

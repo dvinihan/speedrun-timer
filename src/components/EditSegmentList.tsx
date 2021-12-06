@@ -1,7 +1,6 @@
-import axios from "axios";
 import { useCallback, useState } from "react";
-import { useQuery } from "react-query";
 import { useAppContext } from "../context/AppContext";
+import { useSegmentsQuery } from "../hooks/useSegmentsQuery";
 import { MediumButton } from "../styles/Buttons";
 import { SegmentRow } from "../types/SegmentRow";
 import { EditSegmentItem } from "./EditSegmentItem";
@@ -11,10 +10,7 @@ export const EditSegmentList = () => {
 
   const [newSegment, setNewSegment] = useState<SegmentRow | undefined>();
 
-  const { data: segments = [], refetch } = useQuery("segments", async () => {
-    const { data } = await axios.get("/api/segments");
-    return data;
-  });
+  const { data: segments = [], refetch } = useSegmentsQuery();
 
   const handleAddSegment = useCallback(() => {
     const maxId =

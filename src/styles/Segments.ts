@@ -1,15 +1,17 @@
 import styled from "styled-components";
 
-export const SegmentDiv = styled.div`
+export const SegmentDiv = styled.div<{
+  shouldCollapse?: boolean;
+  isActive?: boolean;
+}>`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
   margin-bottom: 10px;
   padding: 10px;
-  height: 64px;
-  border: ${(props: { isActive?: boolean }) =>
-    props.isActive ? "5px solid black" : "initial"};
+  height: ${(props) => (props.shouldCollapse ? "20px" : "64px")};
+  border: ${(props) => (props.isActive ? "5px solid black" : "initial")};
   background-color: ${(props: { isActive?: boolean }) =>
     props.isActive ? "lightblue" : "lightgray"};
 `;

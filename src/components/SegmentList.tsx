@@ -1,6 +1,5 @@
-import axios from "axios";
-import { useQuery } from "react-query";
 import { useAppContext } from "../context/AppContext";
+import { useSegments } from "../hooks/useSegments";
 import { MediumButton } from "../styles/Buttons";
 import { SegmentRow } from "../types/SegmentRow";
 import { SegmentItem } from "./SegmentItem";
@@ -8,10 +7,7 @@ import { SegmentItem } from "./SegmentItem";
 export const SegmentList = () => {
   const { showEditSegments, setShowEditSegments } = useAppContext()!;
 
-  const { data: segments = [] } = useQuery("segments", async () => {
-    const { data } = await axios.get("/api/segments");
-    return data;
-  });
+  const segments = useSegments();
 
   if (showEditSegments) return null;
 

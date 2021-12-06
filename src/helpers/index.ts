@@ -4,12 +4,11 @@ export const getNextSegmentId = (
   segments: SegmentRow[],
   currentSegmentId: number
 ): number | undefined => {
-  const sortedSegments = segments.sort((s) => s.id);
-  const currentSegmentIndex = sortedSegments.findIndex(
+  const currentSegmentIndex = segments.findIndex(
     (s) => s.id === currentSegmentId
   );
   const nextSegmentIndex = currentSegmentIndex + 1;
-  const nextSegment = sortedSegments[nextSegmentIndex];
+  const nextSegment = segments[nextSegmentIndex];
   return nextSegment?.id;
 };
 

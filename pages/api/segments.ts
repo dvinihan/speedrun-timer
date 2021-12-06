@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { SEGMENT_COLLECTION_NAME } from "../../src/constants/mongodb";
 import connectToDatabase from "../../src/util/mongodb";
 
 export const getSegments = async (
@@ -6,7 +7,10 @@ export const getSegments = async (
   res: NextApiResponse
 ) => {
   const db = await connectToDatabase();
-  const segments = await db.collection("segments").find().toArray();
+  const segments = await db
+    .collection(SEGMENT_COLLECTION_NAME)
+    .find()
+    .toArray();
   res.json(segments);
 };
 

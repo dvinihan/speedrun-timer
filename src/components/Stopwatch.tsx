@@ -1,12 +1,17 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "react-query";
+import { useMutation } from "react-query";
 import styled from "styled-components";
+import { SplitData, SplitRequestBody } from "../../pages/api/split";
 import { useAppContext } from "../context/AppContext";
 import { getDisplayTime, getNextSegmentId } from "../helpers";
+import { useCurrentSegment } from "../hooks/useCurrentSegment";
+import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
+import { useLatestRunSegment } from "../hooks/useLatestRunSegment";
+import { useRunId } from "../hooks/useRunId";
+import { useRunSegmentsQuery } from "../hooks/useRunSegmentsQuery";
+import { useSegments } from "../hooks/useSegments";
 import { LargeButton, MediumButton } from "../styles/Buttons";
-import { Run } from "../types/Run";
-import { SegmentRow } from "../types/SegmentRow";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -39,99 +44,34 @@ const Time = styled.div`
 `;
 
 export const Stopwatch = () => {
-  const {
-    isRunning,
-    setIsRunning,
-    currentSegmentId,
-    setCurrentSegmentId,
-    runId,
-    setRunId,
-  } = useAppContext()!;
-  const [accruedTime, setAccruedTime] = useState(0);
+  const { isRunning, setIsRunning } = useAppContext()!;
+  const [runningTime, setRunningTime] = useState(0);
+  const [startedAtTime, setStartedAtTime] = useState(0);
 
-  const { data: segments = [] } = useQuery<SegmentRow[]>(
-    "segments",
-    async () => {
-      const { data } = await axios.get("/api/segments");
-      return data;
-    }
-  );
-  const { data: runs = [], refetch: refetchRuns } = useQuery<Run[]>(
-    "runs",
-    async () => {
-      const { data } = await axios.get("/api/runs");
-      return data;
-    }
-  );
+  const runId = useRunId();
+  const latestRunSegment = useLatestRunSegment();
+  const currentSegmentId = useCurrentSegmentId();
+  const currentSegment = useCurrentSegment();
 
-  useEffect(() => {
-    if (runs.length === 0) {
-      return;
-    }
-
-    const latestRunId = Math.max(...runs.map((r) => r.id));
-    if (!latestRunId) {
-      return;
-    }
-    setRunId(latestRunId);
-
-    const latestRun = runs.find((r) => r.id === latestRunId)!;
-
-    const latestSegmentId = Math.max(...latestRun.segments.map((s) => s.id));
-    if (!latestSegmentId) {
-      return;
-    }
-
-    const nextSegmentId = getNextSegmentId(segments, latestSegmentId);
-
-    const latestSegment = latestRun.segments.find(
-      (s) => s.id === latestSegmentId
-    )!;
-    setAccruedTime(latestSegment.accruedTime);
-    if (nextSegmentId) {
-      setCurrentSegmentId(nextSegmentId);
-    } else {
-      setCurrentSegmentId(-1);
-    }
-  }, [runs, segments, setCurrentSegmentId, setRunId]);
-
-  const isOnLastSegment = useMemo(() => {
-    const maxId = Math.max(...segments.map((s) => s.id));
-    return maxId === currentSegmentId;
-  }, [currentSegmentId, segments]);
-
-  const { mutate: performSplit } = useMutation(
-    "split",
-    async () => {
-      const { data } = await axios.post("/api/split", {
-        segmentId: currentSegmentId,
-        accruedTime,
-        runId,
-      });
-      return data;
-    },
-    {
-      onSuccess: ({ runId: newRunId }) => {
-        if (!isOnLastSegment) {
-          const nextSegmentId = getNextSegmentId(segments, currentSegmentId);
-          setCurrentSegmentId(nextSegmentId!);
-
-          if (!runId) {
-            setRunId(newRunId);
-          }
+  const segments = useSegments();
+  const { refetch: refetchRunSegments } = useRunSegmentsQuery({
+    onSuccess: (data) => {
+      if (data) {
+        const { totalTime } = data;
+        if (!runningTime) {
+          setRunningTime(totalTime);
         }
+      }
+    },
+  });
 
-        refetchRuns();
-      },
-    }
-  );
-
+  // timer
   useEffect(() => {
     let interval: NodeJS.Timer | undefined;
 
     if (isRunning) {
       interval = setInterval(() => {
-        setAccruedTime((time) => time + 10);
+        setRunningTime(Date.now() - startedAtTime + runningTime);
       }, 10);
     } else if (interval) {
       clearInterval(interval);
@@ -142,40 +82,72 @@ export const Stopwatch = () => {
         clearInterval(interval);
       }
     };
-  }, [isRunning]);
+    // we can't include runningTime or the timer will tick too quickly
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning, startedAtTime]);
+
+  const { mutate: performSplit } = useMutation(
+    "split",
+    async ({ isCompleted }: { isCompleted: boolean }) => {
+      const { data } = await axios.post<
+        SplitData,
+        AxiosResponse<SplitData>,
+        SplitRequestBody
+      >("/api/split", {
+        runId,
+        segmentId: currentSegmentId!,
+        segmentTime:
+          Date.now() - startedAtTime + (currentSegment?.segmentTime ?? 0),
+        isCompleted,
+      });
+      return data;
+    },
+    {
+      onSuccess: () => {
+        refetchRunSegments();
+      },
+    }
+  );
 
   const start = () => {
     setIsRunning(true);
-    setAccruedTime(0);
-    setCurrentSegmentId(segments[0].id);
+    setStartedAtTime(Date.now());
   };
 
   const resume = () => {
     setIsRunning(true);
+    setStartedAtTime(Date.now());
   };
 
   const stop = () => {
     setIsRunning(false);
+    performSplit({ isCompleted: false });
   };
 
   const reset = () => {
     setIsRunning(false);
-    setAccruedTime(0);
-    setRunId(undefined);
-    setCurrentSegmentId(0);
+    setStartedAtTime(0);
+    setRunningTime(0);
   };
 
   const split = () => {
-    performSplit();
+    performSplit({ isCompleted: true });
   };
 
   const finish = () => {
-    performSplit();
+    performSplit({ isCompleted: true });
     setIsRunning(false);
-    setAccruedTime(0);
-    setRunId(undefined);
-    setCurrentSegmentId(0);
   };
+
+  const isOnLastSegment = useMemo(() => {
+    const lastSegment = segments.slice(-1)[0];
+    return lastSegment ? lastSegment.id === currentSegmentId : false;
+  }, [currentSegmentId, segments]);
+
+  const isFinished = useMemo(
+    () => !Boolean(currentSegmentId) && Boolean(latestRunSegment),
+    [currentSegmentId, latestRunSegment]
+  );
 
   return (
     <VerticalDiv>
@@ -184,10 +156,10 @@ export const Stopwatch = () => {
           <StopButton onClick={stop}>Stop</StopButton>
         ) : (
           <StartButton
-            disabled={currentSegmentId === -1}
-            onClick={accruedTime ? resume : start}
+            disabled={isFinished}
+            onClick={runningTime ? resume : start}
           >
-            {accruedTime ? "Resume" : "Start"}
+            {runningTime ? "Resume" : "Start"}
           </StartButton>
         )}
         <SplitButton
@@ -198,11 +170,11 @@ export const Stopwatch = () => {
           {isOnLastSegment ? "Finish" : "Split"}
         </SplitButton>
       </HorizontalDiv>
-      {currentSegmentId === -1 && <Time>Done!</Time>}
-      <Time>{getDisplayTime(accruedTime)}</Time>
-      <MediumButton disabled={isRunning} onClick={reset}>
+      {isFinished && <Time>Done!</Time>}
+      <Time>{getDisplayTime(runningTime)}</Time>
+      {/* <MediumButton disabled={isRunning} onClick={reset}>
         Reset
-      </MediumButton>
+      </MediumButton> */}
     </VerticalDiv>
   );
 };
