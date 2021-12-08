@@ -26,3 +26,19 @@ export const NameInput = styled.input`
   font-size: medium;
   width: 100%;
 `;
+
+export const FlexDiv = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export const BestTimeDiv = styled.div`
+  margin-right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+export const BestText = styled.div`
+  font-size: small;
+`;

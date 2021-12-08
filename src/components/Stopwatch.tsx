@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation } from "react-query";
 import styled from "styled-components";
 import { SplitData, SplitRequestBody } from "../../pages/api/split";
@@ -12,6 +12,7 @@ import { useRunId } from "../hooks/useRunId";
 import { useLatestRunSegmentsQuery } from "../hooks/useLatestRunSegmentsQuery";
 import { useSegments } from "../hooks/useSegments";
 import { LargeButton, MediumButton } from "../styles/Buttons";
+import { useSegmentTime } from "../hooks/useSegmentTime";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -44,14 +45,20 @@ const Time = styled.div`
 `;
 
 export const Stopwatch = () => {
-  const { isRunning, setIsRunning } = useAppContext()!;
-  const [runningTime, setRunningTime] = useState(0);
-  const [startedAtTime, setStartedAtTime] = useState(0);
+  const {
+    isRunning,
+    setIsRunning,
+    startedAtTime,
+    setStartedAtTime,
+    runningTime,
+    setRunningTime,
+  } = useAppContext()!;
 
   const runId = useRunId();
   const latestRunSegment = useLatestRunSegment();
   const currentSegmentId = useCurrentSegmentId();
   const currentSegment = useCurrentSegment();
+  const segmentTime = useSegmentTime();
 
   const segments = useSegments();
   const { refetch: refetchRunSegments } = useLatestRunSegmentsQuery({
@@ -89,8 +96,6 @@ export const Stopwatch = () => {
   const { mutate: performSplit } = useMutation(
     "split",
     async ({ isCompleted }: { isCompleted: boolean }) => {
-      const segmentTime =
-        Date.now() - startedAtTime + (currentSegment?.segmentTime ?? 0);
       setStartedAtTime(Date.now());
 
       const { data } = await axios.post<

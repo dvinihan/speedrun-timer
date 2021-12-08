@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import connectToDatabase from "../../src/util/mongodb";
 
-export const deleteSegment = async (
-  req: NextApiRequest,
-  res: NextApiResponse
-) => {
+const deleteSegment = async (req: NextApiRequest, res: NextApiResponse) => {
   const db = await connectToDatabase();
 
   const { id } = req.query;
