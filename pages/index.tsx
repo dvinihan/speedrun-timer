@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { Stopwatch } from "../src/components/Stopwatch";
 import { EditSegmentList } from "../src/components/EditSegmentList";
 import { SegmentList } from "../src/components/SegmentList";
+import { Stats } from "../src/components/Stats";
 
 const FlexDiv = styled.div`
   display: flex;
@@ -20,6 +21,7 @@ const SegmentsFlexItem = styled.div`
 `;
 
 const StopwatchFlexItem = styled.div`
+  flex-direction: column;
   flex: 1;
   min-width: 240px;
   display: flex;
@@ -39,6 +41,7 @@ const Home: NextPage = () => {
         </SegmentsFlexItem>
         <StopwatchFlexItem>
           <Stopwatch />
+          <Stats />
         </StopwatchFlexItem>
       </FlexDiv>
     </Container>

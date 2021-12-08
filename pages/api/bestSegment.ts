@@ -3,11 +3,19 @@ import { getQueryParamNumber } from "../../src/helpers";
 import { RunSegment } from "../../src/types/RunSegment";
 import connectToDatabase from "../../src/util/mongodb";
 
-export interface BestSegmentResponse extends NextApiRequest {
+export interface BestSegmentRequest extends NextApiRequest {
+  query: {
+    segmentId: string;
+    currentRunId: string;
+  };
+}
+export interface BetsSegmentResponse {
   bestSegmentTime?: number;
 }
-
-const bestSegment = async (req: BestSegmentResponse, res: NextApiResponse) => {
+const bestSegment = async (
+  req: BestSegmentRequest,
+  res: NextApiResponse<BetsSegmentResponse>
+) => {
   const db = await connectToDatabase();
 
   const { segmentId, currentRunId } = req.query;
