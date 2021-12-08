@@ -5,6 +5,7 @@ import {
   FlexDiv,
   Name,
   SegmentDiv,
+  TimeDiv,
 } from "../styles/Segments";
 import { getDisplayTime } from "../helpers";
 import { useRunSegments } from "../hooks/useRunSegments";
@@ -12,6 +13,8 @@ import { useRunId } from "../hooks/useRunId";
 import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
 import { useBestSegmentTime } from "../hooks/useBestSegmentTime";
 import { useSegmentTime } from "../hooks/useSegmentTime";
+import { OverUnder } from "./OverUnder";
+import { useAppContext } from "../context/AppContext";
 
 type Props = {
   segment: SegmentRow;
@@ -19,11 +22,12 @@ type Props = {
 
 export const SegmentItem = ({ segment }: Props) => {
   const { name, id } = segment;
+  const { startedAtTime } = useAppContext()!;
 
   const runId = useRunId();
   const runSegments = useRunSegments();
   const currentRunSegmentId = useCurrentSegmentId();
-  const segmentTime = useSegmentTime();
+  const activeSegmentTime = useSegmentTime();
   const thisRunSegment = runSegments.find(
     (runSegment) => runSegment.runId === runId && runSegment.segmentId === id
   );
@@ -31,7 +35,8 @@ export const SegmentItem = ({ segment }: Props) => {
 
   const isActive = currentRunSegmentId === id;
   const shouldCollapse = !thisRunSegment?.isCompleted && !isActive;
-  const timeToShow = isActive ? segmentTime : thisRunSegment?.segmentTime;
+  const timeToShow =
+    isActive && startedAtTime ? activeSegmentTime : thisRunSegment?.segmentTime;
 
   return (
     <SegmentDiv isActive={isActive} shouldCollapse={shouldCollapse}>
@@ -43,7 +48,8 @@ export const SegmentItem = ({ segment }: Props) => {
             <div>{getDisplayTime(bestSegmentTime)}</div>
           </BestTimeDiv>
         )}
-        <div>{getDisplayTime(timeToShow)}</div>
+        {thisRunSegment?.isCompleted && <OverUnder segmentId={id} />}
+        <TimeDiv>{getDisplayTime(timeToShow)}</TimeDiv>
       </FlexDiv>
     </SegmentDiv>
   );

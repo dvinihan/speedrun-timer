@@ -33,7 +33,7 @@ export const FlexDiv = styled.div`
 `;
 
 export const BestTimeDiv = styled.div`
-  margin-right: 20px;
+  margin-right: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -41,4 +41,11 @@ export const BestTimeDiv = styled.div`
 
 export const BestText = styled.div`
   font-size: small;
+`;
+
+export const TimeDiv = styled.div`
+  font-weight: 500;
+  width: 70px;
+  text-align: center;
+  font-size: large;
 `;

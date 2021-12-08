@@ -12,27 +12,33 @@ const bestSegment = async (req: BestSegmentResponse, res: NextApiResponse) => {
 
   const { segmentId, currentRunId } = req.query;
 
+  if (!segmentId || !currentRunId) {
+    res.json({});
+    return;
+  }
+
   const matchingSegments = await db
     .collection<RunSegment>("runSegments")
     .find({ segmentId: getQueryParamNumber(segmentId) })
     .toArray();
 
-  if (matchingSegments.length === 0) {
+  const filteredSegments = matchingSegments.filter(
+    (runSegment) =>
+      runSegment.segmentTime !== 0 &&
+      runSegment.isCompleted &&
+      runSegment.runId !== getQueryParamNumber(currentRunId)
+  );
+
+  if (filteredSegments.length === 0) {
     res.json({});
+    return;
   }
 
-  const bestSegmentTime = matchingSegments
-    .filter(
-      (runSegment) =>
-        runSegment.segmentTime !== 0 &&
-        runSegment.isCompleted &&
-        runSegment.runId !== getQueryParamNumber(currentRunId)
-    )
-    .reduce(
-      (bestTime, runSegment) =>
-        runSegment.segmentTime < bestTime ? runSegment.segmentTime : bestTime,
-      Number.MAX_VALUE
-    );
+  const bestSegmentTime = filteredSegments.reduce(
+    (bestTime, runSegment) =>
+      runSegment.segmentTime < bestTime ? runSegment.segmentTime : bestTime,
+    Number.MAX_VALUE
+  );
 
   res.json({ bestSegmentTime });
 };
