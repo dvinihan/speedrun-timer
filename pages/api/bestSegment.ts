@@ -9,12 +9,12 @@ export interface BestSegmentRequest extends NextApiRequest {
     currentRunId: string;
   };
 }
-export interface BetsSegmentResponse {
+export interface BestSegmentResponse {
   bestSegmentTime?: number;
 }
 const bestSegment = async (
   req: BestSegmentRequest,
-  res: NextApiResponse<BetsSegmentResponse>
+  res: NextApiResponse<BestSegmentResponse>
 ) => {
   const db = await connectToDatabase();
 
