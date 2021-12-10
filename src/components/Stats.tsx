@@ -2,33 +2,28 @@ import axios from "axios";
 import { useQuery } from "react-query";
 import { getDisplayTime } from "../helpers";
 import styled from "styled-components";
-import { useRunId } from "../hooks/useRunId";
 import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
+import { StatsApiResponse } from "../../pages/api/stats";
 
 const Container = styled.div`
   margin-top: 30px;
 `;
 
 export const Stats = () => {
-  const currentRunId = useRunId();
   const currentSegmentId = useCurrentSegmentId();
 
-  const { data: sobs } = useQuery("sobs", async () => {
-    const { data } = await axios.get("/api/sobs");
-    return data;
-  });
-  const { sumOfBestSegmentsTime } = sobs ?? {};
-
-  const { data: bestPossible } = useQuery("bestPossible", async () => {
-    const { data } = await axios.get(
-      `/api/bestPossible?currentRunId=${currentRunId}&currentSegmentId=${currentSegmentId}`
+  const { data } = useQuery("sobs", async () => {
+    const { data } = await axios.get<StatsApiResponse>(
+      `/api/stats?currentSegmentId=${currentSegmentId}`
     );
     return data;
   });
-  const { bestPossibleTime } = bestPossible ?? {};
+  const { sumOfBestSegmentsTime, bestPossibleTime, bestOverallTime } =
+    data ?? {};
 
   return (
     <Container>
+      <div>Best overall: {getDisplayTime(bestOverallTime)}</div>
       <div>
         Best possible for current run: {getDisplayTime(bestPossibleTime)}
       </div>
