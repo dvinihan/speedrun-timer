@@ -21,7 +21,7 @@ export const getDisplayTime = (time?: number) => {
   const seconds = ("0" + Math.floor((time / 1000) % 60)).slice(-2);
   const deciSeconds = Math.floor(time / 100) % 10;
 
-  return [hours, minutes, seconds]
+  let preDecimal = [hours, minutes, seconds]
     .reduce((timeString, timeSlot) => {
       if (timeString === "") {
         if (timeSlot === "00") {
@@ -33,9 +33,13 @@ export const getDisplayTime = (time?: number) => {
       }
       return timeString.concat(timeSlot).concat(":");
     }, "")
-    .slice(0, -1)
-    .concat(".")
-    .concat(deciSeconds.toString());
+    .slice(0, -1);
+
+  if (!preDecimal) {
+    preDecimal = "0";
+  }
+
+  return preDecimal.concat(".").concat(deciSeconds.toString());
 };
 
 const stripLeadingZero = (numberString: string) => {

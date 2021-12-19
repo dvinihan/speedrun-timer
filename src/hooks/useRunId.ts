@@ -1,17 +1,7 @@
 import { useMemo } from "react";
-import { useRunSegments } from "./useRunSegments";
+import { useRunsData } from "./useRunsData";
 
 export const useRunId = () => {
-  const runSegments = useRunSegments();
-
-  return useMemo(() => {
-    if (runSegments.length === 0) {
-      return;
-    }
-    return runSegments.reduce(
-      (latestSoFar, runSegment) =>
-        runSegment.runId <= latestSoFar ? latestSoFar : runSegment.runId,
-      0
-    );
-  }, [runSegments]);
+  const { latestRunSegments } = useRunsData();
+  return useMemo(() => latestRunSegments?.[0].runId, [latestRunSegments]);
 };

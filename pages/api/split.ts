@@ -1,13 +1,12 @@
 import { Db } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { RUN_SEGMENT_COLLECTION_NAME } from "../../src/constants/mongodb";
+import { RUN_SEGMENT_COLLECTION_NAME } from "../../src/constants";
 import { RunSegment } from "../../src/types/RunSegment";
 import connectToDatabase from "../../src/util/mongodb";
 
 export type SplitRequestBody = {
   segmentId: number;
   segmentTime: number;
-  // totalTime: number;
   runId?: number;
   isCompleted: boolean;
 };

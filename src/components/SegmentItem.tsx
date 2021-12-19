@@ -8,13 +8,12 @@ import {
   TimeDiv,
 } from "../styles/Segments";
 import { getDisplayTime } from "../helpers";
-import { useRunSegments } from "../hooks/useRunSegments";
 import { useRunId } from "../hooks/useRunId";
-import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
-import { useBestSegmentTime } from "../hooks/useBestSegmentTime";
-import { useSegmentTime } from "../hooks/useSegmentTime";
+import { useRunsData } from "../hooks/useRunsData";
+import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
 import { OverUnder } from "./OverUnder";
 import { useAppContext } from "../context/AppContext";
+import { useMemo } from "react";
 
 type Props = {
   segment: SegmentRow;
@@ -24,16 +23,26 @@ export const SegmentItem = ({ segment }: Props) => {
   const { name, id } = segment;
   const { startedAtTime } = useAppContext()!;
 
+  const {
+    currentSegmentId,
+    latestRunSegments,
+    bestSegmentTimes = [],
+  } = useRunsData();
+
+  const bestSegmentTime = useMemo(() => {
+    const timeKey = Object.keys(bestSegmentTimes).find(
+      (key) => key === id.toString()
+    );
+    return bestSegmentTimes[parseInt(timeKey!)];
+  }, [bestSegmentTimes, id]);
+
   const runId = useRunId();
-  const runSegments = useRunSegments();
-  const currentRunSegmentId = useCurrentSegmentId();
-  const activeSegmentTime = useSegmentTime();
-  const thisRunSegment = runSegments.find(
+  const activeSegmentTime = useActiveSegmentTime();
+  const thisRunSegment = latestRunSegments?.find(
     (runSegment) => runSegment.runId === runId && runSegment.segmentId === id
   );
-  const bestSegmentTime = useBestSegmentTime();
 
-  const isActive = currentRunSegmentId === id;
+  const isActive = currentSegmentId === id;
   const shouldCollapse = !thisRunSegment?.isCompleted && !isActive;
   const timeToShow =
     isActive && startedAtTime ? activeSegmentTime : thisRunSegment?.segmentTime;
@@ -45,7 +54,7 @@ export const SegmentItem = ({ segment }: Props) => {
         {bestSegmentTime && isActive && (
           <BestTimeDiv>
             <BestText>Best</BestText>
-            <div>{getDisplayTime(bestSegmentTime)}</div>
+            <div>{getDisplayTime(bestSegmentTime.time)}</div>
           </BestTimeDiv>
         )}
         {thisRunSegment?.isCompleted && <OverUnder segmentId={id} />}

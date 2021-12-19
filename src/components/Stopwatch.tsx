@@ -5,14 +5,11 @@ import styled from "styled-components";
 import { SplitData, SplitRequestBody } from "../../pages/api/split";
 import { useAppContext } from "../context/AppContext";
 import { getDisplayTime } from "../helpers";
-import { useCurrentSegment } from "../hooks/useCurrentSegment";
-import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
-import { useLatestRunSegment } from "../hooks/useLatestRunSegment";
 import { useRunId } from "../hooks/useRunId";
-import { useLatestRunSegmentsQuery } from "../hooks/useLatestRunSegmentsQuery";
-import { useSegments } from "../hooks/useSegments";
 import { LargeButton, MediumButton } from "../styles/Buttons";
-import { useSegmentTime } from "../hooks/useSegmentTime";
+import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
+import { useRunsData } from "../hooks/useRunsData";
+import { useSegmentsQuery } from "../hooks/useSegmentsQuery";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -55,22 +52,14 @@ export const Stopwatch = () => {
   } = useAppContext()!;
 
   const runId = useRunId();
-  const latestRunSegment = useLatestRunSegment();
-  const currentSegmentId = useCurrentSegmentId();
-  const currentSegment = useCurrentSegment();
-  const segmentTime = useSegmentTime();
+  const segmentTime = useActiveSegmentTime();
 
-  const segments = useSegments();
-  const { refetch: refetchRunSegments } = useLatestRunSegmentsQuery({
-    onSuccess: (data) => {
-      if (data) {
-        const { totalTime } = data;
-        if (!runningTime) {
-          setRunningTime(totalTime);
-        }
-      }
-    },
-  });
+  const { data: segments = [] } = useSegmentsQuery();
+  const {
+    currentSegmentId,
+    latestRunSegments = [],
+    refetchRunsData,
+  } = useRunsData();
 
   // timer
   useEffect(() => {
@@ -112,7 +101,7 @@ export const Stopwatch = () => {
     },
     {
       onSuccess: () => {
-        refetchRunSegments();
+        refetchRunsData();
       },
     }
   );
@@ -146,7 +135,7 @@ export const Stopwatch = () => {
         isCompleted: false,
       }
     );
-    refetchRunSegments();
+    refetchRunsData();
   };
 
   const split = () => {
@@ -163,10 +152,22 @@ export const Stopwatch = () => {
     return lastSegment ? lastSegment.id === currentSegmentId : false;
   }, [currentSegmentId, segments]);
 
-  const isFinished = useMemo(
-    () => !Boolean(currentSegmentId) && Boolean(latestRunSegment),
-    [currentSegmentId, latestRunSegment]
-  );
+  const isFinished = useMemo(() => {
+    if (latestRunSegments.length === segments.length) {
+      return true;
+    }
+    // if (latestRunSegments.length === 0) {
+    //   return false;
+    // }
+    // const latestRunSegment = latestRunSegments.reduce(
+    //   (latestSoFar, runSegment) =>
+    //     latestSoFar && runSegment.segmentId <= latestSoFar.segmentId
+    //       ? latestSoFar
+    //       : runSegment
+    // );
+    return false;
+    // return !Boolean(currentSegmentId) && Boolean(latestRunSegment);
+  }, [latestRunSegments.length, segments.length]);
 
   return (
     <VerticalDiv>

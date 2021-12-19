@@ -1,5 +1,5 @@
 import { useAppContext } from "../context/AppContext";
-import { useSegments } from "../hooks/useSegments";
+import { useSegmentsQuery } from "../hooks/useSegmentsQuery";
 import { MediumButton } from "../styles/Buttons";
 import { SegmentRow } from "../types/SegmentRow";
 import { SegmentItem } from "./SegmentItem";
@@ -7,7 +7,7 @@ import { SegmentItem } from "./SegmentItem";
 export const SegmentList = () => {
   const { showEditSegments, setShowEditSegments } = useAppContext()!;
 
-  const segments = useSegments();
+  const { data: segments = [] } = useSegmentsQuery();
 
   if (showEditSegments) return null;
 

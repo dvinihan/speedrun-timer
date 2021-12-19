@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { SEGMENT_COLLECTION_NAME } from "../../src/constants/mongodb";
+import { SEGMENT_COLLECTION_NAME } from "../../src/constants";
 import connectToDatabase from "../../src/util/mongodb";
 
 const getSegments = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -8,7 +8,13 @@ const getSegments = async (req: NextApiRequest, res: NextApiResponse) => {
     .collection(SEGMENT_COLLECTION_NAME)
     .find()
     .toArray();
-  res.json(segments);
+
+  res.json(
+    segments.map((segment: any) => {
+      delete segment._id;
+      return segment;
+    })
+  );
 };
 
 export default getSegments;

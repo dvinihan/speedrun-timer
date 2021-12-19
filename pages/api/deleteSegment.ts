@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { SEGMENT_COLLECTION_NAME } from "../../src/constants";
 import connectToDatabase from "../../src/util/mongodb";
 
 const deleteSegment = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -10,11 +11,11 @@ const deleteSegment = async (req: NextApiRequest, res: NextApiResponse) => {
   const idQuery = Number.parseInt(singleId, 10);
 
   const matchingSegment = await db
-    .collection("segments")
+    .collection(SEGMENT_COLLECTION_NAME)
     .findOne({ id: idQuery });
 
   if (matchingSegment) {
-    await db.collection("segments").deleteOne({ id: idQuery });
+    await db.collection(SEGMENT_COLLECTION_NAME).deleteOne({ id: idQuery });
   }
 
   res.json({});

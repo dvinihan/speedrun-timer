@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { SEGMENT_COLLECTION_NAME } from "../../src/constants";
 import connectToDatabase from "../../src/util/mongodb";
 
 const saveSegment = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -6,12 +7,16 @@ const saveSegment = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const { id, name } = req.body;
 
-  const matchingSegment = await db.collection("segments").findOne({ id });
+  const matchingSegment = await db
+    .collection(SEGMENT_COLLECTION_NAME)
+    .findOne({ id });
 
   if (matchingSegment) {
-    await db.collection("segments").updateOne({ id }, { $set: { name } });
+    await db
+      .collection(SEGMENT_COLLECTION_NAME)
+      .updateOne({ id }, { $set: { name } });
   } else {
-    await db.collection("segments").insertOne({ id, name });
+    await db.collection(SEGMENT_COLLECTION_NAME).insertOne({ id, name });
   }
 
   res.json({});
