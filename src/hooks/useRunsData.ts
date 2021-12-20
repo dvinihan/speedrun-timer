@@ -1,32 +1,32 @@
 import axios, { AxiosResponse } from "axios";
+import { sumBy } from "lodash";
+import { NextApiRequest } from "next";
 import { useQuery } from "react-query";
-import { RunsApiRequest, RunsApiResponse } from "../../pages/api/runs";
+import { RunsApiResponse } from "../../pages/api/runs";
+import { RUNS_QUERY_KEY } from "../constants";
 import { useAppContext } from "../context/AppContext";
-
-interface RunsData extends RunsApiResponse {
-  refetchRunsData: () => void;
-}
 
 export const useRunsData = () => {
   const { runningTime, setRunningTime } = useAppContext()!;
 
-  const { data, refetch: refetchRunsData } = useQuery<RunsApiResponse>(
-    ["runs"],
+  const { data } = useQuery<RunsApiResponse>(
+    RUNS_QUERY_KEY,
     async () => {
       const { data } = await axios.get<
-        RunsApiRequest,
+        NextApiRequest,
         AxiosResponse<RunsApiResponse>
       >("/api/runs");
       return data;
     },
     {
-      onSuccess: ({ totalTime }) => {
+      onSuccess: ({ latestRunSegments }) => {
         if (!runningTime) {
+          const totalTime = sumBy(latestRunSegments, (r) => r.segmentTime);
           setRunningTime(totalTime);
         }
       },
       refetchOnMount: false,
     }
   );
-  return ({ ...data, refetchRunsData } ?? {}) as RunsData;
+  return (data ?? {}) as RunsApiResponse;
 };

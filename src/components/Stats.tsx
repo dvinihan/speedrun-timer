@@ -1,14 +1,20 @@
 import { getDisplayTime } from "../helpers";
 import styled from "styled-components";
 import { useRunsData } from "../hooks/useRunsData";
+import { sumBy } from "lodash";
+import { useMemo } from "react";
 
 const Container = styled.div`
   margin-top: 30px;
 `;
 
 export const Stats = () => {
-  const { sumOfBestSegmentsTime, bestPossibleTime, bestOverallTime } =
-    useRunsData();
+  const { bestPossibleTime, bestSegmentTimes, bestOverallTime } = useRunsData();
+
+  const sumOfBestSegments = useMemo(
+    () => sumBy(bestSegmentTimes, (r) => r.time),
+    [bestSegmentTimes]
+  );
 
   return (
     <Container>
@@ -16,7 +22,7 @@ export const Stats = () => {
       <div>
         Best possible for current run: {getDisplayTime(bestPossibleTime)}
       </div>
-      <div>SOBS: {getDisplayTime(sumOfBestSegmentsTime)}</div>
+      <div>SOBS: {getDisplayTime(sumOfBestSegments)}</div>
     </Container>
   );
 };

@@ -14,6 +14,7 @@ import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
 import { OverUnder } from "./OverUnder";
 import { useAppContext } from "../context/AppContext";
 import { useMemo } from "react";
+import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
 
 type Props = {
   segment: SegmentRow;
@@ -23,18 +24,13 @@ export const SegmentItem = ({ segment }: Props) => {
   const { name, id } = segment;
   const { startedAtTime } = useAppContext()!;
 
-  const {
-    currentSegmentId,
-    latestRunSegments,
-    bestSegmentTimes = [],
-  } = useRunsData();
+  const { latestRunSegments, bestSegmentTimes = [] } = useRunsData();
+  const currentSegmentId = useCurrentSegmentId();
 
-  const bestSegmentTime = useMemo(() => {
-    const timeKey = Object.keys(bestSegmentTimes).find(
-      (key) => key === id.toString()
-    );
-    return bestSegmentTimes[parseInt(timeKey!)];
-  }, [bestSegmentTimes, id]);
+  const bestSegmentTime = useMemo(
+    () => bestSegmentTimes.find((r) => r.segmentId === id)?.time,
+    [bestSegmentTimes, id]
+  );
 
   const runId = useRunId();
   const activeSegmentTime = useActiveSegmentTime();
@@ -54,7 +50,7 @@ export const SegmentItem = ({ segment }: Props) => {
         {bestSegmentTime && isActive && (
           <BestTimeDiv>
             <BestText>Best</BestText>
-            <div>{getDisplayTime(bestSegmentTime.time)}</div>
+            <div>{getDisplayTime(bestSegmentTime)}</div>
           </BestTimeDiv>
         )}
         {thisRunSegment?.isCompleted && <OverUnder segmentId={id} />}

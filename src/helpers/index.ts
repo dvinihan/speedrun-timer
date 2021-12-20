@@ -1,17 +1,3 @@
-import { SegmentRow } from "../types/SegmentRow";
-
-export const getNextSegmentId = (
-  segments: SegmentRow[],
-  currentSegmentId: number
-): number | undefined => {
-  const currentSegmentIndex = segments.findIndex(
-    (s) => s.id === currentSegmentId
-  );
-  const nextSegmentIndex = currentSegmentIndex + 1;
-  const nextSegment = segments[nextSegmentIndex];
-  return nextSegment?.id;
-};
-
 export const getDisplayTime = (time?: number) => {
   if (time === undefined) {
     return "--";
@@ -47,9 +33,4 @@ const stripLeadingZero = (numberString: string) => {
     return numberString.slice(1);
   }
   return numberString;
-};
-
-export const getQueryParamNumber = (param: string | string[]) => {
-  const singleNumber = typeof param === "string" ? param : param[0];
-  return Number.parseInt(singleNumber, 10);
 };

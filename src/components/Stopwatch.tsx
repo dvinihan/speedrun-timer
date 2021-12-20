@@ -1,8 +1,8 @@
-import axios, { AxiosResponse } from "axios";
-import { useEffect, useMemo } from "react";
-import { useMutation } from "react-query";
+import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "react-query";
 import styled from "styled-components";
-import { SplitData, SplitRequestBody } from "../../pages/api/split";
+import { SplitRequestBody } from "../../pages/api/split";
 import { useAppContext } from "../context/AppContext";
 import { getDisplayTime } from "../helpers";
 import { useRunId } from "../hooks/useRunId";
@@ -10,6 +10,10 @@ import { LargeButton, MediumButton } from "../styles/Buttons";
 import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
 import { useRunsData } from "../hooks/useRunsData";
 import { useSegmentsQuery } from "../hooks/useSegmentsQuery";
+import { RUNS_QUERY_KEY } from "../constants";
+import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
+import ReactModal from "react-modal";
+import Loader from "react-loader-spinner";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -41,7 +45,19 @@ const Time = styled.div`
   font-size: xx-large;
 `;
 
+const modalStyles = {
+  content: {
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+  },
+};
+
 export const Stopwatch = () => {
+  const queryClient = useQueryClient();
   const {
     isRunning,
     setIsRunning,
@@ -55,11 +71,10 @@ export const Stopwatch = () => {
   const segmentTime = useActiveSegmentTime();
 
   const { data: segments = [] } = useSegmentsQuery();
-  const {
-    currentSegmentId,
-    latestRunSegments = [],
-    refetchRunsData,
-  } = useRunsData();
+  const { latestRunSegments = [] } = useRunsData();
+  const currentSegmentId = useCurrentSegmentId();
+
+  const [isLoading, setIsLoading] = useState(false);
 
   // timer
   useEffect(() => {
@@ -87,11 +102,7 @@ export const Stopwatch = () => {
     async ({ isCompleted }: { isCompleted: boolean }) => {
       setStartedAtTime(Date.now());
 
-      const { data } = await axios.post<
-        SplitData,
-        AxiosResponse<SplitData>,
-        SplitRequestBody
-      >("/api/split", {
+      const { data } = await axios.post<SplitRequestBody>("/api/split", {
         runId,
         segmentId: currentSegmentId!,
         segmentTime,
@@ -100,8 +111,14 @@ export const Stopwatch = () => {
       return data;
     },
     {
-      onSuccess: () => {
-        refetchRunsData();
+      onMutate: () => {
+        setIsLoading(true);
+      },
+      onSettled: () => {
+        setIsLoading(false);
+      },
+      onSuccess: (data) => {
+        queryClient.setQueryData(RUNS_QUERY_KEY, data);
       },
     }
   );
@@ -126,16 +143,13 @@ export const Stopwatch = () => {
     setStartedAtTime(0);
     setRunningTime(0);
 
-    await axios.post<SplitData, AxiosResponse<SplitData>, SplitRequestBody>(
-      "/api/split",
-      {
-        runId: (runId ?? 0) + 1,
-        segmentId: segments[0].id,
-        segmentTime: 0,
-        isCompleted: false,
-      }
-    );
-    refetchRunsData();
+    const { data } = await axios.post<SplitRequestBody>("/api/split", {
+      runId: (runId ?? 0) + 1,
+      segmentId: segments[0].id,
+      segmentTime: 0,
+      isCompleted: false,
+    });
+    queryClient.setQueryData(RUNS_QUERY_KEY, data);
   };
 
   const split = () => {
@@ -152,49 +166,39 @@ export const Stopwatch = () => {
     return lastSegment ? lastSegment.id === currentSegmentId : false;
   }, [currentSegmentId, segments]);
 
-  const isFinished = useMemo(() => {
-    if (latestRunSegments.length === segments.length) {
-      return true;
-    }
-    // if (latestRunSegments.length === 0) {
-    //   return false;
-    // }
-    // const latestRunSegment = latestRunSegments.reduce(
-    //   (latestSoFar, runSegment) =>
-    //     latestSoFar && runSegment.segmentId <= latestSoFar.segmentId
-    //       ? latestSoFar
-    //       : runSegment
-    // );
-    return false;
-    // return !Boolean(currentSegmentId) && Boolean(latestRunSegment);
-  }, [latestRunSegments.length, segments.length]);
+  const isFinished = latestRunSegments.length === segments.length;
 
   return (
-    <VerticalDiv>
-      <HorizontalDiv>
-        {isRunning ? (
-          <StopButton onClick={stop}>Stop</StopButton>
-        ) : (
-          <StartButton
-            disabled={isFinished}
-            onClick={runningTime ? resume : start}
+    <>
+      <VerticalDiv>
+        <HorizontalDiv>
+          {isRunning ? (
+            <StopButton onClick={stop}>Stop</StopButton>
+          ) : (
+            <StartButton
+              disabled={isFinished}
+              onClick={runningTime ? resume : start}
+            >
+              {runningTime ? "Resume" : "Start"}
+            </StartButton>
+          )}
+          <SplitButton
+            color={isRunning ? "lightgreen" : ""}
+            disabled={!isRunning}
+            onClick={isOnLastSegment ? finish : split}
           >
-            {runningTime ? "Resume" : "Start"}
-          </StartButton>
-        )}
-        <SplitButton
-          color={isRunning ? "lightgreen" : ""}
-          disabled={!isRunning}
-          onClick={isOnLastSegment ? finish : split}
-        >
-          {isOnLastSegment ? "Finish" : "Split"}
-        </SplitButton>
-      </HorizontalDiv>
-      {isFinished && <Time>Done!</Time>}
-      <Time>{getDisplayTime(runningTime)}</Time>
-      <MediumButton disabled={isRunning} onClick={reset}>
-        Reset
-      </MediumButton>
-    </VerticalDiv>
+            {isOnLastSegment ? "Finish" : "Split"}
+          </SplitButton>
+        </HorizontalDiv>
+        {isFinished && <Time>Done!</Time>}
+        <Time>{getDisplayTime(runningTime)}</Time>
+        <MediumButton disabled={isRunning} onClick={reset}>
+          Reset
+        </MediumButton>
+      </VerticalDiv>
+      <ReactModal isOpen={isLoading} style={modalStyles}>
+        <Loader type="ThreeDots" />
+      </ReactModal>
+    </>
   );
 };

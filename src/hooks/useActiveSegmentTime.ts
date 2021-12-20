@@ -1,13 +1,17 @@
+import { useMemo } from "react";
 import { useAppContext } from "../context/AppContext";
+import { useCurrentSegmentId } from "./useCurrentSegmentId";
 import { useRunsData } from "./useRunsData";
 
 export const useActiveSegmentTime = () => {
   const { startedAtTime } = useAppContext()!;
-  const { currentSegmentId, latestRunSegments } = useRunsData();
+  const { latestRunSegments } = useRunsData();
+  const currentSegmentId = useCurrentSegmentId();
 
-  const currentSegment = latestRunSegments?.find(
-    (runSegment) => runSegment.segmentId === currentSegmentId
-  );
-
-  return Date.now() - startedAtTime + (currentSegment?.segmentTime ?? 0);
+  return useMemo(() => {
+    const currentSegment = latestRunSegments?.find(
+      (runSegment) => runSegment.segmentId === currentSegmentId
+    );
+    return Date.now() - startedAtTime + (currentSegment?.segmentTime ?? 0);
+  }, [currentSegmentId, latestRunSegments, startedAtTime]);
 };
