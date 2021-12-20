@@ -10,11 +10,9 @@ import {
 } from "../server/helpers";
 import { RunSegment } from "../../src/types/RunSegment";
 import { SegmentRow } from "../../src/types/SegmentRow";
-import connectToDatabase from "../../src/util/mongodb";
+import { Db } from "mongodb";
 
-export const getRuns = async () => {
-  const db = await connectToDatabase();
-
+export const getRuns = async (db: Db) => {
   const [allRunSegments, segments] = await Promise.all([
     db.collection<RunSegment>(RUN_SEGMENT_COLLECTION_NAME).find().toArray(),
     db.collection<SegmentRow>(SEGMENT_COLLECTION_NAME).find().toArray(),

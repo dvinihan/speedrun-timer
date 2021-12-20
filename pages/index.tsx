@@ -4,6 +4,9 @@ import { Stopwatch } from "../src/components/Stopwatch";
 import { EditSegmentList } from "../src/components/EditSegmentList";
 import { SegmentList } from "../src/components/SegmentList";
 import { Stats } from "../src/components/Stats";
+import { useEffect } from "react";
+import { useAppContext } from "../src/context/AppContext";
+import { useRunsData } from "../src/hooks/useRunsData";
 
 const FlexDiv = styled.div`
   display: flex;
@@ -30,6 +33,14 @@ const StopwatchFlexItem = styled.div`
 `;
 
 const Home: NextPage = () => {
+  const { setCurrentRunSegments } = useAppContext()!;
+
+  const { latestRunSegments } = useRunsData();
+
+  useEffect(() => {
+    setCurrentRunSegments(latestRunSegments);
+  }, [latestRunSegments, setCurrentRunSegments]);
+
   return (
     <Container>
       <h1>SMO Speedrun Timer</h1>

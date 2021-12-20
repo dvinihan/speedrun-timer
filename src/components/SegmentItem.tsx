@@ -8,7 +8,6 @@ import {
   TimeDiv,
 } from "../styles/Segments";
 import { getDisplayTime } from "../helpers";
-import { useRunId } from "../hooks/useRunId";
 import { useRunsData } from "../hooks/useRunsData";
 import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
 import { OverUnder } from "./OverUnder";
@@ -22,9 +21,9 @@ type Props = {
 
 export const SegmentItem = ({ segment }: Props) => {
   const { name, id } = segment;
-  const { startedAtTime } = useAppContext()!;
+  const { currentRunSegments, startedAtTime } = useAppContext()!;
 
-  const { latestRunSegments, bestSegmentTimes = [] } = useRunsData();
+  const { bestSegmentTimes = [] } = useRunsData();
   const currentSegmentId = useCurrentSegmentId();
 
   const bestSegmentTime = useMemo(
@@ -32,10 +31,9 @@ export const SegmentItem = ({ segment }: Props) => {
     [bestSegmentTimes, id]
   );
 
-  const runId = useRunId();
   const activeSegmentTime = useActiveSegmentTime();
-  const thisRunSegment = latestRunSegments?.find(
-    (runSegment) => runSegment.runId === runId && runSegment.segmentId === id
+  const thisRunSegment = currentRunSegments?.find(
+    (runSegment) => runSegment.segmentId === id
   );
 
   const isActive = currentSegmentId === id;

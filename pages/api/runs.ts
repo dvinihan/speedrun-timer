@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getRuns } from "../../src/server";
 import { RunSegmentTime } from "../../src/server/helpers";
 import { RunSegment } from "../../src/types/RunSegment";
+import connectToDatabase from "../../src/util/mongodb";
 
 export interface RunsApiResponse {
   bestPossibleTime: number;
@@ -15,7 +16,11 @@ const runs = async (
   req: NextApiRequest,
   res: NextApiResponse<RunsApiResponse>
 ) => {
-  const runData = await getRuns();
+  const { runType } = req.query;
+
+  const db = await connectToDatabase(runType);
+
+  const runData = await getRuns(db);
   res.json(runData);
 };
 

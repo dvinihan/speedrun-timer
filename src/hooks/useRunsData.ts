@@ -7,7 +7,7 @@ import { RUNS_QUERY_KEY } from "../constants";
 import { useAppContext } from "../context/AppContext";
 
 export const useRunsData = () => {
-  const { runningTime, setRunningTime } = useAppContext()!;
+  const { runningTime, setRunningTime, runType } = useAppContext()!;
 
   const { data } = useQuery<RunsApiResponse>(
     RUNS_QUERY_KEY,
@@ -15,7 +15,7 @@ export const useRunsData = () => {
       const { data } = await axios.get<
         NextApiRequest,
         AxiosResponse<RunsApiResponse>
-      >("/api/runs");
+      >(`/api/runs?runType=${runType}`);
       return data;
     },
     {

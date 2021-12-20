@@ -20,9 +20,10 @@ const split = async (
   req: SplitRequest,
   res: NextApiResponse<RunsApiResponse>
 ) => {
-  const db = await connectToDatabase();
-
+  const { runType } = req.query;
   const { runId } = req.body;
+
+  const db = await connectToDatabase(runType);
 
   const doesMatchingRunExist = Boolean(
     await db
@@ -35,7 +36,7 @@ const split = async (
   } else {
     await createNewRun(db, req.body);
   }
-  const runData = await getRuns();
+  const runData = await getRuns(db);
   res.json(runData);
 };
 

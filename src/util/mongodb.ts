@@ -1,16 +1,11 @@
 import { Db, MongoClient } from "mongodb";
+import { RunType } from "../constants";
 
-const { MONGODB_URI, MONGODB_DB } = process.env;
+const { MONGODB_URI } = process.env;
 
 if (!MONGODB_URI) {
   throw new Error(
     "Please define the MONGODB_URI environment variable inside .env.local"
-  );
-}
-
-if (!MONGODB_DB) {
-  throw new Error(
-    "Please define the MONGODB_DB environment variable inside .env.local"
   );
 }
 
@@ -28,14 +23,22 @@ if (!cached) {
   cached = global.mongo = { conn: null, promise: null };
 }
 
-const connectToDatabase: () => Promise<Db> = async () => {
+const connectToDatabase: (runType: string | string[]) => Promise<Db> = async (
+  runType: string | string[]
+) => {
+  const runTypeString = Array.isArray(runType) ? runType[0] : runType;
+  // @ts-ignore
+  if (!runTypeString || !Object.values(RunType).includes(runTypeString)) {
+    throw Error("Invalid runType parameter: " + runType);
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
 
   if (!cached.promise) {
     cached.promise = MongoClient.connect(MONGODB_URI).then((client) =>
-      client.db(MONGODB_DB)
+      client.db(runTypeString)
     );
   }
   cached.conn = await cached.promise;

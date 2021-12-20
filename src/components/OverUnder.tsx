@@ -1,6 +1,5 @@
 import { getDisplayTime } from "../helpers";
 import styled from "styled-components";
-import { useRunId } from "../hooks/useRunId";
 import { useRunsData } from "../hooks/useRunsData";
 
 const Container = styled.div<{ color: string }>`
@@ -14,21 +13,11 @@ type Props = {
 };
 
 export const OverUnder = ({ segmentId }: Props) => {
-  const runId = useRunId();
-  const { latestRunSegments, overUnders } = useRunsData();
-  const thisRunSegment = latestRunSegments.find(
-    (runSegment) =>
-      runSegment.runId === runId && runSegment.segmentId === segmentId
-  );
-
-  if (!thisRunSegment) {
-    return null;
-  }
+  const { overUnders } = useRunsData();
 
   const diff =
-    overUnders.find(
-      (overUnder) => overUnder.segmentId === thisRunSegment.segmentId
-    )?.time ?? 0;
+    overUnders.find((overUnder) => overUnder.segmentId === segmentId)?.time ??
+    0;
   const absoluteValueDiff = Math.abs(diff);
   const operator = diff > 0 ? "+" : "-";
   const tenSecondsMS = 10 * 1000;

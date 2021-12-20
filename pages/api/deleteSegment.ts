@@ -3,9 +3,9 @@ import { SEGMENT_COLLECTION_NAME } from "../../src/constants";
 import connectToDatabase from "../../src/util/mongodb";
 
 const deleteSegment = async (req: NextApiRequest, res: NextApiResponse) => {
-  const db = await connectToDatabase();
+  const { id, runType } = req.query;
 
-  const { id } = req.query;
+  const db = await connectToDatabase(runType);
 
   const singleId = typeof id === "string" ? id : id[0];
   const idQuery = Number.parseInt(singleId, 10);

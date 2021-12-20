@@ -1,13 +1,15 @@
 import { useMemo } from "react";
-import { useRunsData } from "./useRunsData";
+import { useAppContext } from "../context/AppContext";
 
 export const useCurrentSegmentId = () => {
-  const { latestRunSegments = [] } = useRunsData();
+  const { currentRunSegments = [] } = useAppContext()!;
 
   return useMemo(() => {
-    const maxSegmentId = Math.max(...latestRunSegments.map((r) => r.segmentId));
-    return latestRunSegments.every((r) => r.isCompleted)
+    const maxSegmentId = Math.max(
+      ...currentRunSegments.map((r) => r.segmentId)
+    );
+    return currentRunSegments.every((r) => r.isCompleted)
       ? maxSegmentId + 1
       : maxSegmentId;
-  }, [latestRunSegments]);
+  }, [currentRunSegments]);
 };

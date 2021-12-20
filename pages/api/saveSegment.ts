@@ -3,9 +3,10 @@ import { SEGMENT_COLLECTION_NAME } from "../../src/constants";
 import connectToDatabase from "../../src/util/mongodb";
 
 const saveSegment = async (req: NextApiRequest, res: NextApiResponse) => {
-  const db = await connectToDatabase();
-
   const { id, name } = req.body;
+  const { runType } = req.query;
+
+  const db = await connectToDatabase(runType);
 
   const matchingSegment = await db
     .collection(SEGMENT_COLLECTION_NAME)

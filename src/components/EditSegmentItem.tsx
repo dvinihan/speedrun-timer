@@ -6,6 +6,7 @@ import axios from "axios";
 import ReactModal from "react-modal";
 import { MediumButton } from "../styles/Buttons";
 import { Name, NameInput, SegmentDiv } from "../styles/Segments";
+import { useAppContext } from "../context/AppContext";
 
 ReactModal.setAppElement("#__next");
 
@@ -26,6 +27,7 @@ type Props = {
 export const EditSegmentItem = ({ isNew = false, onSave, segment }: Props) => {
   const { id, name: initialName } = segment;
 
+  const { runType } = useAppContext()!;
   const [name, setName] = useState(initialName);
   const [showEdit, setShowEdit] = useState(isNew);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -33,7 +35,10 @@ export const EditSegmentItem = ({ isNew = false, onSave, segment }: Props) => {
   const { mutate: performSave } = useMutation(
     async () => {
       if (name) {
-        await axios.post("/api/saveSegment", { ...segment, name });
+        await axios.post(`/api/saveSegment?runType=${runType}`, {
+          ...segment,
+          name,
+        });
       }
     },
     {
@@ -45,7 +50,7 @@ export const EditSegmentItem = ({ isNew = false, onSave, segment }: Props) => {
   );
   const { mutate: performDelete } = useMutation(
     async () => {
-      await axios.delete(`/api/deleteSegment?id=${id}`);
+      await axios.delete(`/api/deleteSegment?runType=${runType}&id=${id}`);
     },
     {
       onSuccess: () => {

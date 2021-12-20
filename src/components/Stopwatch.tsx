@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "react-query";
 import styled from "styled-components";
 import { SplitRequestBody } from "../../pages/api/split";
@@ -8,12 +8,9 @@ import { getDisplayTime } from "../helpers";
 import { useRunId } from "../hooks/useRunId";
 import { LargeButton, MediumButton } from "../styles/Buttons";
 import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
-import { useRunsData } from "../hooks/useRunsData";
 import { useSegmentsQuery } from "../hooks/useSegmentsQuery";
 import { RUNS_QUERY_KEY } from "../constants";
 import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
-import ReactModal from "react-modal";
-import Loader from "react-loader-spinner";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -45,36 +42,25 @@ const Time = styled.div`
   font-size: xx-large;
 `;
 
-const modalStyles = {
-  content: {
-    top: "50%",
-    left: "50%",
-    right: "auto",
-    bottom: "auto",
-    marginRight: "-50%",
-    transform: "translate(-50%, -50%)",
-  },
-};
-
 export const Stopwatch = () => {
   const queryClient = useQueryClient();
   const {
+    currentRunSegments = [],
+    setCurrentRunSegments,
     isRunning,
     setIsRunning,
     startedAtTime,
     setStartedAtTime,
     runningTime,
     setRunningTime,
+    runType,
   } = useAppContext()!;
 
   const runId = useRunId();
   const segmentTime = useActiveSegmentTime();
-
-  const { data: segments = [] } = useSegmentsQuery();
-  const { latestRunSegments = [] } = useRunsData();
   const currentSegmentId = useCurrentSegmentId();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const { data: segments = [] } = useSegmentsQuery();
 
   // timer
   useEffect(() => {
@@ -100,23 +86,34 @@ export const Stopwatch = () => {
   const { mutate: performSplit } = useMutation(
     "split",
     async ({ isCompleted }: { isCompleted: boolean }) => {
-      setStartedAtTime(Date.now());
-
-      const { data } = await axios.post<SplitRequestBody>("/api/split", {
+      const newRunSegment = {
         runId,
         segmentId: currentSegmentId!,
         segmentTime,
         isCompleted,
+      };
+
+      setStartedAtTime(Date.now());
+      setCurrentRunSegments((runSegments) => {
+        const runSegment = runSegments.find(
+          (r) => r.segmentId === currentSegmentId
+        );
+        if (runSegment) {
+          return runSegments.map((r) =>
+            r.segmentId === currentSegmentId ? newRunSegment : r
+          );
+        } else {
+          return [...runSegments, newRunSegment];
+        }
       });
+
+      const { data } = await axios.post<SplitRequestBody>(
+        `/api/split?runType=${runType}`,
+        newRunSegment
+      );
       return data;
     },
     {
-      onMutate: () => {
-        setIsLoading(true);
-      },
-      onSettled: () => {
-        setIsLoading(false);
-      },
       onSuccess: (data) => {
         queryClient.setQueryData(RUNS_QUERY_KEY, data);
       },
@@ -143,12 +140,15 @@ export const Stopwatch = () => {
     setStartedAtTime(0);
     setRunningTime(0);
 
-    const { data } = await axios.post<SplitRequestBody>("/api/split", {
-      runId: (runId ?? 0) + 1,
-      segmentId: segments[0].id,
-      segmentTime: 0,
-      isCompleted: false,
-    });
+    const { data } = await axios.post<SplitRequestBody>(
+      `/api/split?runType=${runType}`,
+      {
+        runId: (runId ?? 0) + 1,
+        segmentId: segments[0].id,
+        segmentTime: 0,
+        isCompleted: false,
+      }
+    );
     queryClient.setQueryData(RUNS_QUERY_KEY, data);
   };
 
@@ -166,7 +166,7 @@ export const Stopwatch = () => {
     return lastSegment ? lastSegment.id === currentSegmentId : false;
   }, [currentSegmentId, segments]);
 
-  const isFinished = latestRunSegments.length === segments.length;
+  const isFinished = currentRunSegments.length === segments.length;
 
   return (
     <>
@@ -196,9 +196,6 @@ export const Stopwatch = () => {
           Reset
         </MediumButton>
       </VerticalDiv>
-      <ReactModal isOpen={isLoading} style={modalStyles}>
-        <Loader type="ThreeDots" />
-      </ReactModal>
     </>
   );
 };
