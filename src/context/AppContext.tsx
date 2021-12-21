@@ -28,7 +28,7 @@ export const AppContextProvider = ({ children }: { children: any }) => {
   const [showEditSegments, setShowEditSegments] = useState(false);
   const [runningTime, setRunningTime] = useState(0);
   const [startedAtTime, setStartedAtTime] = useState(0);
-  const [runType, setRunType] = useState(RunType.WORLD_PEACE);
+  const [runType, setRunType] = useState(RunType.ANY_PERCENT);
 
   const [currentRunSegments, setCurrentRunSegments] = useState<RunSegment[]>(
     []
