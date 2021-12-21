@@ -5,7 +5,7 @@ import { SegmentRow } from "../types/SegmentRow";
 
 export const useSegmentsQuery = () => {
   const { runType } = useAppContext()!;
-  return useQuery<SegmentRow[]>("segments", async () => {
+  return useQuery<SegmentRow[]>(["segments", runType], async () => {
     const { data } = await axios.get(`/api/segments?runType=${runType}`);
     return data;
   });

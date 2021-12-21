@@ -4,6 +4,6 @@ export const SEGMENT_COLLECTION_NAME = "segments";
 export const RUNS_QUERY_KEY = "runs";
 
 export enum RunType {
-  WORLD_PEACE = "world_peace",
-  ANY_PERCENT = "any_percent",
+  WORLD_PEACE = "worldPeace",
+  ANY_PERCENT = "anyPercent",
 }

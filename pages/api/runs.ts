@@ -18,9 +18,9 @@ const runs = async (
 ) => {
   const { runType } = req.query;
 
-  const db = await connectToDatabase(runType);
+  const db = await connectToDatabase();
 
-  const runData = await getRuns(db);
+  const runData = await getRuns(db, runType);
   res.json(runData);
 };
 

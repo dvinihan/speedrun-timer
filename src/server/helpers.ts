@@ -1,4 +1,5 @@
 import { groupBy, minBy, sumBy } from "lodash";
+import { RunType } from "../constants";
 import { RunSegment } from "../types/RunSegment";
 import { SegmentRow } from "../types/SegmentRow";
 
@@ -94,4 +95,17 @@ export const getOverUnders = (
     },
     []
   );
+};
+
+export const getCollectionName = (
+  inputString: string | string[],
+  collectionType: string
+) => {
+  const runTypeString = Array.isArray(inputString)
+    ? inputString[0]
+    : inputString;
+
+  const runType =
+    Object.values(RunType).find((type) => type === runTypeString) ?? "";
+  return `${collectionType}_${runType}`;
 };

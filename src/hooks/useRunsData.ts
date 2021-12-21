@@ -6,11 +6,15 @@ import { RunsApiResponse } from "../../pages/api/runs";
 import { RUNS_QUERY_KEY } from "../constants";
 import { useAppContext } from "../context/AppContext";
 
+interface RunsData extends RunsApiResponse {
+  refetchRuns: () => void;
+}
+
 export const useRunsData = () => {
   const { runningTime, setRunningTime, runType } = useAppContext()!;
 
-  const { data } = useQuery<RunsApiResponse>(
-    RUNS_QUERY_KEY,
+  const { data, refetch } = useQuery<RunsApiResponse>(
+    [RUNS_QUERY_KEY, runType],
     async () => {
       const { data } = await axios.get<
         NextApiRequest,
@@ -28,5 +32,5 @@ export const useRunsData = () => {
       refetchOnMount: false,
     }
   );
-  return (data ?? {}) as RunsApiResponse;
+  return ({ ...data, refetchRuns: refetch } ?? {}) as RunsData;
 };
