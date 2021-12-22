@@ -10,7 +10,7 @@ export const EditSegmentList = () => {
 
   const [newSegment, setNewSegment] = useState<SegmentRow | undefined>();
 
-  const { data: segments = [], refetch } = useSegmentsQuery();
+  const { segments, refetch } = useSegmentsQuery();
 
   const handleAddSegment = useCallback(() => {
     const maxId =
@@ -30,13 +30,15 @@ export const EditSegmentList = () => {
   return (
     <>
       <div>
-        {segments.map((segment: SegmentRow, index: number) => (
-          <EditSegmentItem
-            key={`${segment.name}-${index}`}
-            onSave={refetch}
-            segment={segment}
-          />
-        ))}
+        {segments
+          .sort((a, b) => a.id - b.id)
+          .map((segment: SegmentRow, index: number) => (
+            <EditSegmentItem
+              key={`${segment.name}-${index}`}
+              onSave={refetch}
+              segment={segment}
+            />
+          ))}
         {newSegment && (
           <EditSegmentItem isNew onSave={handleSave} segment={newSegment} />
         )}

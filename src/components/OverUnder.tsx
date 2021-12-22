@@ -15,9 +15,14 @@ type Props = {
 export const OverUnder = ({ segmentId }: Props) => {
   const { overUnders } = useRunsData();
 
-  const diff =
-    overUnders.find((overUnder) => overUnder.segmentId === segmentId)?.time ??
-    0;
+  const diff = overUnders.find(
+    (overUnder) => overUnder.segmentId === segmentId
+  )?.time;
+
+  if (diff === undefined) {
+    return null;
+  }
+
   const absoluteValueDiff = Math.abs(diff);
   const operator = diff > 0 ? "+" : "-";
   const tenSecondsMS = 10 * 1000;

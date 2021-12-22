@@ -60,7 +60,7 @@ export const Stopwatch = () => {
   const segmentTime = useActiveSegmentTime();
   const currentSegmentId = useCurrentSegmentId();
 
-  const { data: segments = [] } = useSegmentsQuery();
+  const { segments } = useSegmentsQuery();
 
   // timer
   useEffect(() => {
@@ -115,7 +115,7 @@ export const Stopwatch = () => {
     },
     {
       onSuccess: (data) => {
-        queryClient.setQueryData(RUNS_QUERY_KEY, data);
+        queryClient.setQueryData([RUNS_QUERY_KEY, runType], data);
       },
     }
   );
@@ -149,7 +149,7 @@ export const Stopwatch = () => {
         isCompleted: false,
       }
     );
-    queryClient.setQueryData(RUNS_QUERY_KEY, data);
+    queryClient.setQueryData([RUNS_QUERY_KEY, runType], data);
   };
 
   const split = () => {

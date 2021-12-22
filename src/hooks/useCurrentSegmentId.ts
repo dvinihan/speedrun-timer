@@ -5,6 +5,9 @@ export const useCurrentSegmentId = () => {
   const { currentRunSegments = [] } = useAppContext()!;
 
   return useMemo(() => {
+    if (currentRunSegments.length === 0) {
+      return 1;
+    }
     const maxSegmentId = Math.max(
       ...currentRunSegments.map((r) => r.segmentId)
     );

@@ -7,16 +7,18 @@ import { SegmentItem } from "./SegmentItem";
 export const SegmentList = () => {
   const { showEditSegments, setShowEditSegments } = useAppContext()!;
 
-  const { data: segments = [] } = useSegmentsQuery();
+  const { segments } = useSegmentsQuery();
 
   if (showEditSegments) return null;
 
   return (
     <>
       <div>
-        {segments.map((segment: SegmentRow, index: number) => (
-          <SegmentItem key={`${segment.name}-${index}`} segment={segment} />
-        ))}
+        {segments
+          .sort((a, b) => a.id - b.id)
+          .map((segment: SegmentRow, index: number) => (
+            <SegmentItem key={`${segment.name}-${index}`} segment={segment} />
+          ))}
       </div>
       <MediumButton onClick={() => setShowEditSegments(true)}>
         Edit Route
