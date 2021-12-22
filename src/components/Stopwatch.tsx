@@ -1,18 +1,16 @@
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import { useEffect, useMemo } from "react";
-import { useMutation } from "react-query";
+import { useMutation, useQueryClient } from "react-query";
 import styled from "styled-components";
-import { SplitData, SplitRequestBody } from "../../pages/api/split";
+import { SplitRequestBody } from "../../pages/api/split";
 import { useAppContext } from "../context/AppContext";
 import { getDisplayTime } from "../helpers";
-import { useCurrentSegment } from "../hooks/useCurrentSegment";
-import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
-import { useLatestRunSegment } from "../hooks/useLatestRunSegment";
 import { useRunId } from "../hooks/useRunId";
-import { useLatestRunSegmentsQuery } from "../hooks/useLatestRunSegmentsQuery";
-import { useSegments } from "../hooks/useSegments";
 import { LargeButton, MediumButton } from "../styles/Buttons";
-import { useSegmentTime } from "../hooks/useSegmentTime";
+import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
+import { useSegmentsQuery } from "../hooks/useSegmentsQuery";
+import { RUNS_QUERY_KEY } from "../constants";
+import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -45,32 +43,24 @@ const Time = styled.div`
 `;
 
 export const Stopwatch = () => {
+  const queryClient = useQueryClient();
   const {
+    currentRunSegments = [],
+    setCurrentRunSegments,
     isRunning,
     setIsRunning,
     startedAtTime,
     setStartedAtTime,
     runningTime,
     setRunningTime,
+    runType,
   } = useAppContext()!;
 
   const runId = useRunId();
-  const latestRunSegment = useLatestRunSegment();
+  const segmentTime = useActiveSegmentTime();
   const currentSegmentId = useCurrentSegmentId();
-  const currentSegment = useCurrentSegment();
-  const segmentTime = useSegmentTime();
 
-  const segments = useSegments();
-  const { refetch: refetchRunSegments } = useLatestRunSegmentsQuery({
-    onSuccess: (data) => {
-      if (data) {
-        const { totalTime } = data;
-        if (!runningTime) {
-          setRunningTime(totalTime);
-        }
-      }
-    },
-  });
+  const { segments } = useSegmentsQuery();
 
   // timer
   useEffect(() => {
@@ -96,23 +86,36 @@ export const Stopwatch = () => {
   const { mutate: performSplit } = useMutation(
     "split",
     async ({ isCompleted }: { isCompleted: boolean }) => {
-      setStartedAtTime(Date.now());
-
-      const { data } = await axios.post<
-        SplitData,
-        AxiosResponse<SplitData>,
-        SplitRequestBody
-      >("/api/split", {
+      const newRunSegment = {
         runId,
         segmentId: currentSegmentId!,
         segmentTime,
         isCompleted,
+      };
+
+      setStartedAtTime(Date.now());
+      setCurrentRunSegments((runSegments) => {
+        const runSegment = runSegments.find(
+          (r) => r.segmentId === currentSegmentId
+        );
+        if (runSegment) {
+          return runSegments.map((r) =>
+            r.segmentId === currentSegmentId ? newRunSegment : r
+          );
+        } else {
+          return [...runSegments, newRunSegment];
+        }
       });
+
+      const { data } = await axios.post<SplitRequestBody>(
+        `/api/split?runType=${runType}`,
+        newRunSegment
+      );
       return data;
     },
     {
-      onSuccess: () => {
-        refetchRunSegments();
+      onSuccess: (data) => {
+        queryClient.setQueryData([RUNS_QUERY_KEY, runType], data);
       },
     }
   );
@@ -137,8 +140,8 @@ export const Stopwatch = () => {
     setStartedAtTime(0);
     setRunningTime(0);
 
-    await axios.post<SplitData, AxiosResponse<SplitData>, SplitRequestBody>(
-      "/api/split",
+    const { data } = await axios.post<SplitRequestBody>(
+      `/api/split?runType=${runType}`,
       {
         runId: (runId ?? 0) + 1,
         segmentId: segments[0].id,
@@ -146,7 +149,7 @@ export const Stopwatch = () => {
         isCompleted: false,
       }
     );
-    refetchRunSegments();
+    queryClient.setQueryData([RUNS_QUERY_KEY, runType], data);
   };
 
   const split = () => {
@@ -163,37 +166,36 @@ export const Stopwatch = () => {
     return lastSegment ? lastSegment.id === currentSegmentId : false;
   }, [currentSegmentId, segments]);
 
-  const isFinished = useMemo(
-    () => !Boolean(currentSegmentId) && Boolean(latestRunSegment),
-    [currentSegmentId, latestRunSegment]
-  );
+  const isFinished = currentRunSegments.length === segments.length;
 
   return (
-    <VerticalDiv>
-      <HorizontalDiv>
-        {isRunning ? (
-          <StopButton onClick={stop}>Stop</StopButton>
-        ) : (
-          <StartButton
-            disabled={isFinished}
-            onClick={runningTime ? resume : start}
+    <>
+      <VerticalDiv>
+        <HorizontalDiv>
+          {isRunning ? (
+            <StopButton onClick={stop}>Stop</StopButton>
+          ) : (
+            <StartButton
+              disabled={isFinished}
+              onClick={runningTime ? resume : start}
+            >
+              {runningTime ? "Resume" : "Start"}
+            </StartButton>
+          )}
+          <SplitButton
+            color={isRunning ? "lightgreen" : ""}
+            disabled={!isRunning}
+            onClick={isOnLastSegment ? finish : split}
           >
-            {runningTime ? "Resume" : "Start"}
-          </StartButton>
-        )}
-        <SplitButton
-          color={isRunning ? "lightgreen" : ""}
-          disabled={!isRunning}
-          onClick={isOnLastSegment ? finish : split}
-        >
-          {isOnLastSegment ? "Finish" : "Split"}
-        </SplitButton>
-      </HorizontalDiv>
-      {isFinished && <Time>Done!</Time>}
-      <Time>{getDisplayTime(runningTime)}</Time>
-      <MediumButton disabled={isRunning} onClick={reset}>
-        Reset
-      </MediumButton>
-    </VerticalDiv>
+            {isOnLastSegment ? "Finish" : "Split"}
+          </SplitButton>
+        </HorizontalDiv>
+        {isFinished && <Time>Done!</Time>}
+        <Time>{getDisplayTime(runningTime)}</Time>
+        <MediumButton disabled={isRunning} onClick={reset}>
+          Reset
+        </MediumButton>
+      </VerticalDiv>
+    </>
   );
 };

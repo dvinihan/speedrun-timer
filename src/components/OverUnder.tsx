@@ -1,10 +1,6 @@
 import { getDisplayTime } from "../helpers";
 import styled from "styled-components";
-import { useRunSegments } from "../hooks/useRunSegments";
-import { useRunId } from "../hooks/useRunId";
-import { useQuery } from "react-query";
-import { BestSegmentResponse } from "../../pages/api/bestSegment";
-import axios from "axios";
+import { useRunsData } from "../hooks/useRunsData";
 
 const Container = styled.div<{ color: string }>`
   font-weight: 500;
@@ -17,28 +13,16 @@ type Props = {
 };
 
 export const OverUnder = ({ segmentId }: Props) => {
-  const runId = useRunId();
-  const runSegments = useRunSegments();
-  const thisRunSegment = runSegments.find(
-    (runSegment) =>
-      runSegment.runId === runId && runSegment.segmentId === segmentId
-  );
-  const { data } = useQuery<BestSegmentResponse>(
-    ["bestSegment", segmentId],
-    async () => {
-      const { data } = await axios.get(
-        `/api/bestSegment?segmentId=${segmentId}&currentRunId=${runId}`
-      );
-      return data;
-    }
-  );
-  const { bestSegmentTime } = data ?? {};
+  const { overUnders } = useRunsData();
 
-  if (!thisRunSegment || !bestSegmentTime) {
+  const diff = overUnders.find(
+    (overUnder) => overUnder.segmentId === segmentId
+  )?.time;
+
+  if (diff === undefined) {
     return null;
   }
 
-  const diff = thisRunSegment?.segmentTime - bestSegmentTime;
   const absoluteValueDiff = Math.abs(diff);
   const operator = diff > 0 ? "+" : "-";
   const tenSecondsMS = 10 * 1000;

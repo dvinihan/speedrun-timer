@@ -1,6 +1,6 @@
 import "../src/styles/globals.css";
 import type { AppProps } from "next/app";
-import { QueryClient, QueryClientProvider } from "react-query";
+import { Hydrate, QueryClient, QueryClientProvider } from "react-query";
 import { useState } from "react";
 import { ReactQueryDevtools } from "react-query/devtools";
 import { AppContextProvider } from "../src/context/AppContext";
@@ -10,10 +10,12 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContextProvider>
-        <Component {...pageProps} />
-        <ReactQueryDevtools />
-      </AppContextProvider>
+      <Hydrate state={pageProps.dehydratedState}>
+        <AppContextProvider>
+          <Component {...pageProps} />
+          <ReactQueryDevtools />
+        </AppContextProvider>
+      </Hydrate>
     </QueryClientProvider>
   );
 }

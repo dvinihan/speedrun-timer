@@ -8,13 +8,12 @@ import {
   TimeDiv,
 } from "../styles/Segments";
 import { getDisplayTime } from "../helpers";
-import { useRunSegments } from "../hooks/useRunSegments";
-import { useRunId } from "../hooks/useRunId";
-import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
-import { useBestSegmentTime } from "../hooks/useBestSegmentTime";
-import { useSegmentTime } from "../hooks/useSegmentTime";
+import { useRunsData } from "../hooks/useRunsData";
+import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
 import { OverUnder } from "./OverUnder";
 import { useAppContext } from "../context/AppContext";
+import { useMemo } from "react";
+import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
 
 type Props = {
   segment: SegmentRow;
@@ -22,18 +21,22 @@ type Props = {
 
 export const SegmentItem = ({ segment }: Props) => {
   const { name, id } = segment;
-  const { startedAtTime } = useAppContext()!;
+  const { currentRunSegments, startedAtTime } = useAppContext()!;
 
-  const runId = useRunId();
-  const runSegments = useRunSegments();
-  const currentRunSegmentId = useCurrentSegmentId();
-  const activeSegmentTime = useSegmentTime();
-  const thisRunSegment = runSegments.find(
-    (runSegment) => runSegment.runId === runId && runSegment.segmentId === id
+  const { bestSegmentTimes = [] } = useRunsData();
+  const currentSegmentId = useCurrentSegmentId();
+
+  const bestSegmentTime = useMemo(
+    () => bestSegmentTimes.find((r) => r.segmentId === id)?.time,
+    [bestSegmentTimes, id]
   );
-  const bestSegmentTime = useBestSegmentTime();
 
-  const isActive = currentRunSegmentId === id;
+  const activeSegmentTime = useActiveSegmentTime();
+  const thisRunSegment = currentRunSegments?.find(
+    (runSegment) => runSegment.segmentId === id
+  );
+
+  const isActive = currentSegmentId === id;
   const shouldCollapse = !thisRunSegment?.isCompleted && !isActive;
   const timeToShow =
     isActive && startedAtTime ? activeSegmentTime : thisRunSegment?.segmentTime;

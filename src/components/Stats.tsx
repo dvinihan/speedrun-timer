@@ -1,25 +1,20 @@
-import axios from "axios";
-import { useQuery } from "react-query";
 import { getDisplayTime } from "../helpers";
 import styled from "styled-components";
-import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
-import { StatsApiResponse } from "../../pages/api/stats";
+import { useRunsData } from "../hooks/useRunsData";
+import { sumBy } from "lodash";
+import { useMemo } from "react";
 
 const Container = styled.div`
   margin-top: 30px;
 `;
 
 export const Stats = () => {
-  const currentSegmentId = useCurrentSegmentId();
+  const { bestPossibleTime, bestSegmentTimes, bestOverallTime } = useRunsData();
 
-  const { data } = useQuery("sobs", async () => {
-    const { data } = await axios.get<StatsApiResponse>(
-      `/api/stats?currentSegmentId=${currentSegmentId}`
-    );
-    return data;
-  });
-  const { sumOfBestSegmentsTime, bestPossibleTime, bestOverallTime } =
-    data ?? {};
+  const sumOfBestSegments = useMemo(
+    () => sumBy(bestSegmentTimes, (r) => r.time),
+    [bestSegmentTimes]
+  );
 
   return (
     <Container>
@@ -27,7 +22,7 @@ export const Stats = () => {
       <div>
         Best possible for current run: {getDisplayTime(bestPossibleTime)}
       </div>
-      <div>SOBS: {getDisplayTime(sumOfBestSegmentsTime)}</div>
+      <div>SOBS: {getDisplayTime(sumOfBestSegments)}</div>
     </Container>
   );
 };

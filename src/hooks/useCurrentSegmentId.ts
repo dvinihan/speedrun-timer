@@ -1,23 +1,18 @@
-import { getNextSegmentId } from "../helpers";
-import { useLatestRunSegment } from "./useLatestRunSegment";
-import { useSegments } from "./useSegments";
+import { useMemo } from "react";
+import { useAppContext } from "../context/AppContext";
 
 export const useCurrentSegmentId = () => {
-  const segments = useSegments();
-  const latestRunSegment = useLatestRunSegment();
+  const { currentRunSegments = [] } = useAppContext()!;
 
-  if (segments.length === 0) {
-    return;
-  }
-
-  if (!latestRunSegment) {
-    // if there are no segments logged in this run, start at the first segment
-    return segments[0].id;
-  }
-
-  if (!latestRunSegment.isCompleted) {
-    return latestRunSegment.segmentId;
-  }
-
-  return getNextSegmentId(segments, latestRunSegment.segmentId);
+  return useMemo(() => {
+    if (currentRunSegments.length === 0) {
+      return 1;
+    }
+    const maxSegmentId = Math.max(
+      ...currentRunSegments.map((r) => r.segmentId)
+    );
+    return currentRunSegments.every((r) => r.isCompleted)
+      ? maxSegmentId + 1
+      : maxSegmentId;
+  }, [currentRunSegments]);
 };
