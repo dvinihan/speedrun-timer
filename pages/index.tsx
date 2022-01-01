@@ -1,4 +1,4 @@
-import type { GetStaticProps, NextApiRequest, NextPage } from "next";
+import type { NextApiRequest, NextPage } from "next";
 import styled from "styled-components";
 import { Stopwatch } from "../src/components/Stopwatch";
 import { EditSegmentList } from "../src/components/EditSegmentList";
@@ -38,30 +38,18 @@ const StopwatchFlexItem = styled.div`
 `;
 
 const Home: NextPage = () => {
-  const {
-    setCurrentRunSegments,
-    runType,
-    setRunType,
-    isRunning,
-    setRunningTime,
-  } = useAppContext()!;
+  const { runType, setRunType, isRunning } = useAppContext()!;
   const { refetch: refetchSegments } = useSegmentsQuery();
-  const { latestRunSegments, refetchRuns } = useRunsData();
+  const { refetchRuns } = useRunsData();
 
   useEffect(() => {
-    console.log("----refethcin funr");
     refetchRuns();
   }, [refetchRuns]);
-
-  useEffect(() => {
-    setCurrentRunSegments(latestRunSegments);
-  }, [latestRunSegments, setCurrentRunSegments]);
 
   const handleRunTypeSelect = (e: any) => {
     setRunType(e.target.value);
     refetchRuns();
     refetchSegments();
-    setRunningTime(0);
   };
 
   return (
@@ -96,7 +84,7 @@ export const getServerSideProps = async () => {
   await Promise.all([
     queryClient.prefetchQuery(["segments", RunType.ANY_PERCENT], async () => {
       const { data } = await axios.get(
-        `http://localhost:3000/api/segments?runType=anyPercent`
+        `${process.env.BASE_URL}/api/segments?runType=anyPercent`
       );
       return data;
     }),
@@ -106,7 +94,7 @@ export const getServerSideProps = async () => {
         const { data } = await axios.get<
           NextApiRequest,
           AxiosResponse<RunsApiResponse>
-        >(`http://localhost:3000/api/runs?runType=anyPercent`);
+        >(`${process.env.BASE_URL}/api/runs?runType=anyPercent`);
         return data;
       }
     ),

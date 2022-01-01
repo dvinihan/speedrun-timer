@@ -1,16 +1,18 @@
 import axios from "axios";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "react-query";
 import styled from "styled-components";
 import { SplitRequestBody } from "../../pages/api/split";
 import { useAppContext } from "../context/AppContext";
 import { getDisplayTime } from "../helpers";
-import { useRunId } from "../hooks/useRunId";
 import { LargeButton, MediumButton } from "../styles/Buttons";
-import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
 import { useSegmentsQuery } from "../hooks/useSegmentsQuery";
 import { RUNS_QUERY_KEY } from "../constants";
 import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
+import { useRunsData } from "../hooks/useRunsData";
+import { RunsApiResponse } from "../../pages/api/runs";
+import { RunSegment } from "../types/RunSegment";
+import { sumBy } from "lodash";
 
 const StartButton = styled(LargeButton)`
   background-color: lightgreen;
@@ -44,23 +46,28 @@ const Time = styled.div`
 
 export const Stopwatch = () => {
   const queryClient = useQueryClient();
-  const {
-    currentRunSegments = [],
-    setCurrentRunSegments,
-    isRunning,
-    setIsRunning,
-    startedAtTime,
-    setStartedAtTime,
-    runningTime,
-    setRunningTime,
-    runType,
-  } = useAppContext()!;
-
-  const runId = useRunId();
-  const segmentTime = useActiveSegmentTime();
+  const { isRunning, setIsRunning, startedAtTime, setStartedAtTime, runType } =
+    useAppContext()!;
   const currentSegmentId = useCurrentSegmentId();
-
+  const { latestRunSegments } = useRunsData();
   const { segments } = useSegmentsQuery();
+
+  const currentSegment = useMemo(
+    () =>
+      latestRunSegments?.find(
+        (runSegment) => runSegment.segmentId === currentSegmentId
+      ),
+    [latestRunSegments, currentSegmentId]
+  );
+
+  const [runningTime, setRunningTime] = useState(
+    sumBy(latestRunSegments, (r) => r.segmentTime)
+  );
+
+  const runId = useMemo(
+    () => latestRunSegments?.[0]?.runId,
+    [latestRunSegments]
+  );
 
   // timer
   useEffect(() => {
@@ -80,32 +87,12 @@ export const Stopwatch = () => {
       }
     };
     // we can't include runningTime or the timer will tick too quickly
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, startedAtTime]);
 
   const { mutate: performSplit } = useMutation(
     "split",
-    async ({ isCompleted }: { isCompleted: boolean }) => {
-      const newRunSegment = {
-        runId,
-        segmentId: currentSegmentId!,
-        segmentTime,
-        isCompleted,
-      };
-
+    async (newRunSegment: RunSegment) => {
       setStartedAtTime(Date.now());
-      setCurrentRunSegments((runSegments) => {
-        const runSegment = runSegments.find(
-          (r) => r.segmentId === currentSegmentId
-        );
-        if (runSegment) {
-          return runSegments.map((r) =>
-            r.segmentId === currentSegmentId ? newRunSegment : r
-          );
-        } else {
-          return [...runSegments, newRunSegment];
-        }
-      });
 
       const { data } = await axios.post<SplitRequestBody>(
         `/api/split?runType=${runType}`,
@@ -114,8 +101,54 @@ export const Stopwatch = () => {
       return data;
     },
     {
+      onMutate: async (newRunSegment) => {
+        // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+        await queryClient.cancelQueries([RUNS_QUERY_KEY, runType]);
+
+        // Snapshot the previous value
+        const previousRunsData = queryClient.getQueryData([
+          RUNS_QUERY_KEY,
+          runType,
+        ]);
+
+        // Optimistically update to the new value
+        queryClient.setQueryData<RunsApiResponse | undefined>(
+          [RUNS_QUERY_KEY, runType],
+          (old) => {
+            if (!old) return old;
+
+            if (currentSegment) {
+              return {
+                ...old,
+                latestRunSegments: old.latestRunSegments.map((r) =>
+                  r.segmentId === currentSegmentId ? newRunSegment : r
+                ),
+              };
+            } else {
+              return {
+                ...old,
+                latestRunSegments: [...old.latestRunSegments, newRunSegment],
+              };
+            }
+          }
+        );
+
+        // Return a context object with the snapshotted value
+        return { previousRunsData };
+      },
       onSuccess: (data) => {
         queryClient.setQueryData([RUNS_QUERY_KEY, runType], data);
+      },
+      // If the mutation fails, use the context returned from onMutate to roll back
+      onError: (err, newRunSegment, context: any) => {
+        queryClient.setQueryData(
+          [RUNS_QUERY_KEY, runType],
+          context.previousRunsData
+        );
+      },
+      // Always refetch after error or success:
+      onSettled: () => {
+        queryClient.invalidateQueries([RUNS_QUERY_KEY, runType]);
       },
     }
   );
@@ -125,14 +158,14 @@ export const Stopwatch = () => {
     setStartedAtTime(Date.now());
   };
 
-  const resume = () => {
-    setIsRunning(true);
-    setStartedAtTime(Date.now());
-  };
-
   const stop = () => {
     setIsRunning(false);
-    performSplit({ isCompleted: false });
+    performSplit({
+      runId,
+      segmentId: currentSegmentId!,
+      segmentTime: currentSegment?.segmentTime ?? 0,
+      isCompleted: false,
+    });
   };
 
   const reset = async () => {
@@ -153,11 +186,16 @@ export const Stopwatch = () => {
   };
 
   const split = () => {
-    performSplit({ isCompleted: true });
+    performSplit({
+      runId,
+      segmentId: currentSegmentId!,
+      segmentTime: currentSegment?.segmentTime ?? 0,
+      isCompleted: true,
+    });
   };
 
   const finish = () => {
-    performSplit({ isCompleted: true });
+    split();
     setIsRunning(false);
   };
 
@@ -166,7 +204,7 @@ export const Stopwatch = () => {
     return lastSegment ? lastSegment.id === currentSegmentId : false;
   }, [currentSegmentId, segments]);
 
-  const isFinished = currentRunSegments.length === segments.length;
+  const isFinished = latestRunSegments.length === segments.length;
 
   return (
     <>
@@ -175,10 +213,7 @@ export const Stopwatch = () => {
           {isRunning ? (
             <StopButton onClick={stop}>Stop</StopButton>
           ) : (
-            <StartButton
-              disabled={isFinished}
-              onClick={runningTime ? resume : start}
-            >
+            <StartButton disabled={isFinished} onClick={start}>
               {runningTime ? "Resume" : "Start"}
             </StartButton>
           )}

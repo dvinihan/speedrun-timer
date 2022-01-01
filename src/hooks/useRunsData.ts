@@ -11,7 +11,7 @@ interface RunsData extends RunsApiResponse {
 }
 
 export const useRunsData = () => {
-  const { runningTime, setRunningTime, runType } = useAppContext()!;
+  const { runType } = useAppContext()!;
 
   const { data, refetch } = useQuery<RunsApiResponse>(
     [RUNS_QUERY_KEY, runType],
@@ -23,12 +23,11 @@ export const useRunsData = () => {
       return data;
     },
     {
-      onSuccess: ({ latestRunSegments }) => {
-        if (!runningTime) {
-          const totalTime = sumBy(latestRunSegments, (r) => r.segmentTime);
-          setRunningTime(totalTime);
-        }
-      },
+      // onSuccess: ({ latestRunSegments }) => {
+      //   if (!runningTime) {
+      //
+      //   }
+      // },
       refetchOnMount: false,
     }
   );
