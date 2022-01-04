@@ -21,9 +21,9 @@ type Props = {
 
 export const SegmentItem = ({ segment }: Props) => {
   const { name, id } = segment;
-  const { currentRunSegments, startedAtTime } = useAppContext()!;
+  const { startedAtTime } = useAppContext()!;
 
-  const { bestSegmentTimes = [] } = useRunsData();
+  const { bestSegmentTimes = [], latestRunSegments } = useRunsData();
   const currentSegmentId = useCurrentSegmentId();
 
   const bestSegmentTime = useMemo(
@@ -32,7 +32,7 @@ export const SegmentItem = ({ segment }: Props) => {
   );
 
   const activeSegmentTime = useActiveSegmentTime();
-  const thisRunSegment = currentRunSegments?.find(
+  const thisRunSegment = latestRunSegments?.find(
     (runSegment) => runSegment.segmentId === id
   );
 

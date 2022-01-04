@@ -1,11 +1,13 @@
 import { useAppContext } from "../context/AppContext";
 import { useCurrentSegmentId } from "./useCurrentSegmentId";
+import { useRunsData } from "./useRunsData";
 
 export const useActiveSegmentTime = () => {
-  const { currentRunSegments, startedAtTime, isRunning } = useAppContext()!;
+  const { startedAtTime, isRunning } = useAppContext()!;
   const currentSegmentId = useCurrentSegmentId();
+  const { latestRunSegments } = useRunsData();
 
-  const currentSegment = currentRunSegments?.find(
+  const currentSegment = latestRunSegments?.find(
     (runSegment) => runSegment.segmentId === currentSegmentId
   );
   return isRunning
