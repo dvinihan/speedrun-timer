@@ -50,7 +50,7 @@ export const Stats = () => {
       <div>
         Best possible for current run: {getDisplayTime(bestPossibleTime)}
       </div>
-      <div>SOBS: {getDisplayTime(sumOfBestSegments)}</div>
+      <div>Sum of best segments: {getDisplayTime(sumOfBestSegments)}</div>
     </Container>
   );
 };

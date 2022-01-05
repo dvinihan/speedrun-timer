@@ -12,7 +12,7 @@ import { useRunsData } from "../hooks/useRunsData";
 import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
 import { useAppContext } from "../context/AppContext";
 import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
-import { SegmentTimes } from "../server/helpers";
+import { SegmentTimes } from "../helpers/server";
 import { OverUnder } from "./OverUnder";
 
 type Props = {
@@ -22,7 +22,7 @@ type Props = {
 
 export const SegmentItem = ({ segment, segmentTimes }: Props) => {
   const { name, id } = segment;
-  const { bestPastTime } = segmentTimes ?? {};
+  const { bestPastTime, averagePastTime } = segmentTimes ?? {};
 
   const { startedAtTime } = useAppContext()!;
   const { latestRunSegments } = useRunsData();
@@ -42,6 +42,12 @@ export const SegmentItem = ({ segment, segmentTimes }: Props) => {
     <SegmentDiv isActive={isActive} shouldCollapse={shouldCollapse}>
       <Name>{name}</Name>
       <FlexDiv>
+        {!shouldCollapse && (
+          <BestTimeDiv>
+            <BestText>Avg</BestText>
+            <div>{getDisplayTime(averagePastTime)}</div>
+          </BestTimeDiv>
+        )}
         {bestPastTime && isActive && (
           <BestTimeDiv>
             <BestText>Best</BestText>

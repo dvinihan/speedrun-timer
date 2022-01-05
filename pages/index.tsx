@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { useAppContext } from "../src/context/AppContext";
 import { useRunsData } from "../src/hooks/useRunsData";
 import { useSegmentsQuery } from "../src/hooks/useSegmentsQuery";
-import { RUNS_QUERY_KEY, RunType } from "../src/constants";
+import { RUNS_QUERY_KEY, RunType, SEGMENTS_QUERY_KEY } from "../src/constants";
 import { dehydrate, QueryClient } from "react-query";
 import axios, { AxiosResponse } from "axios";
 import { RunsApiResponse } from "./api/runs";
@@ -85,12 +85,15 @@ export const getServerSideProps = async () => {
   const queryClient = new QueryClient();
 
   await Promise.all([
-    queryClient.prefetchQuery(["segments", RunType.ANY_PERCENT], async () => {
-      const { data } = await axios.get(
-        `${process.env.BASE_URL}/api/segments?runType=anyPercent`
-      );
-      return data;
-    }),
+    queryClient.prefetchQuery(
+      [SEGMENTS_QUERY_KEY, RunType.ANY_PERCENT],
+      async () => {
+        const { data } = await axios.get(
+          `${process.env.BASE_URL}/api/segments?runType=anyPercent`
+        );
+        return data;
+      }
+    ),
     queryClient.prefetchQuery(
       [RUNS_QUERY_KEY, RunType.ANY_PERCENT],
       async () => {

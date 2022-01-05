@@ -1,6 +1,6 @@
 import { getDisplayTime } from "../helpers";
 import styled from "styled-components";
-import { SegmentTimes } from "../server/helpers";
+import { SegmentTimes } from "../helpers/server";
 
 const Container = styled.div<{ color: string }>`
   font-weight: 500;
@@ -19,7 +19,6 @@ export const OverUnder = ({ currentTime, segmentTimes }: Props) => {
   }
 
   const diff = currentTime - segmentTimes.bestPastTime;
-
   const absoluteValueDiff = Math.abs(diff);
   const operator = diff > 0 ? "+" : "-";
   const tenSecondsMS = 10 * 1000;

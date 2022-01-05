@@ -6,7 +6,7 @@ import { SegmentRow } from "../types/SegmentRow";
 export type SegmentTimes = {
   segmentId: number;
   bestPastTime: number;
-  averageTime: number;
+  averagePastTime: number;
 };
 
 export const getBestOverallTime = (
@@ -58,16 +58,15 @@ export const getSegmentTimes = (
 
   return segments.map((segment) => {
     const runSegments = runSegmentsBySegment[segment.id.toString()];
+    const pastRunSegments = runSegments.filter(
+      (r) => r.segmentTime > 0 && r.runId !== latestRunId
+    );
+
     return {
       segmentId: segment.id,
       bestPastTime:
-        minBy(
-          runSegments.filter(
-            (r) => r.segmentTime > 0 && r.runId !== latestRunId
-          ),
-          (r) => r.segmentTime
-        )?.segmentTime ?? 0,
-      averageTime: meanBy(runSegments, (r) => r.segmentTime),
+        minBy(pastRunSegments, (r) => r.segmentTime)?.segmentTime ?? 0,
+      averagePastTime: meanBy(pastRunSegments, (r) => r.segmentTime),
     };
   });
 };
