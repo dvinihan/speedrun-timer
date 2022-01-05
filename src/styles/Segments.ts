@@ -45,7 +45,7 @@ export const BestText = styled.div`
 
 export const TimeDiv = styled.div`
   font-weight: 500;
-  width: 70px;
+  width: 40px;
   text-align: center;
   font-size: large;
 `;

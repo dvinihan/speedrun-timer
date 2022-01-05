@@ -1,11 +1,9 @@
 import { Db } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { RUN_SEGMENT_COLLECTION_NAME } from "../../src/constants";
-import { getRuns } from "../../src/server";
-import { getCollectionName } from "../../src/server/helpers";
+import { getCollectionName } from "../../src/helpers/server";
 import { RunSegment } from "../../src/types/RunSegment";
 import connectToDatabase from "../../src/util/mongodb";
-import { RunsApiResponse } from "./runs";
 
 export type SplitRequestBody = {
   segmentId: number;
@@ -17,10 +15,7 @@ interface SplitRequest extends NextApiRequest {
   body: SplitRequestBody;
 }
 
-const split = async (
-  req: SplitRequest,
-  res: NextApiResponse<RunsApiResponse>
-) => {
+const split = async (req: SplitRequest, res: NextApiResponse) => {
   const { runType } = req.query;
   const { runId } = req.body;
 
@@ -39,8 +34,7 @@ const split = async (
   } else {
     await createNewRun(db, req.body, collectionName);
   }
-  const runData = await getRuns(db, runType);
-  res.json(runData);
+  res.json({});
 };
 
 const updateExistingRun = async (

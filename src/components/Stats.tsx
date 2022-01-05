@@ -9,11 +9,39 @@ const Container = styled.div`
 `;
 
 export const Stats = () => {
-  const { bestPossibleTime, bestSegmentTimes, bestOverallTime } = useRunsData();
+  const { bestOverallTime, latestRunSegments, segmentTimesList } =
+    useRunsData();
 
   const sumOfBestSegments = useMemo(
-    () => sumBy(bestSegmentTimes, (r) => r.time),
-    [bestSegmentTimes]
+    () =>
+      sumBy(segmentTimesList, (s) => {
+        const latestRunSegment = latestRunSegments.find(
+          (r) => r.segmentId === s.segmentId
+        );
+        return latestRunSegment
+          ? Math.min(latestRunSegment.segmentTime, s.bestPastTime)
+          : s.bestPastTime;
+      }),
+    [latestRunSegments, segmentTimesList]
+  );
+
+  const bestPossibleTime = useMemo(
+    () =>
+      segmentTimesList.reduce((totalTime, segmentTimes) => {
+        const runSegment = latestRunSegments.find(
+          (r) => r.segmentId === segmentTimes.segmentId
+        );
+
+        const newTime =
+          !runSegment || !runSegment.isCompleted
+            ? // if not yet completed in current run, use best time
+              segmentTimes.bestPastTime
+            : // if completed in current run, use actual time
+              runSegment.segmentTime;
+
+        return totalTime + newTime;
+      }, 0),
+    [latestRunSegments, segmentTimesList]
   );
 
   return (
@@ -22,7 +50,7 @@ export const Stats = () => {
       <div>
         Best possible for current run: {getDisplayTime(bestPossibleTime)}
       </div>
-      <div>SOBS: {getDisplayTime(sumOfBestSegments)}</div>
+      <div>Sum of best segments: {getDisplayTime(sumOfBestSegments)}</div>
     </Container>
   );
 };

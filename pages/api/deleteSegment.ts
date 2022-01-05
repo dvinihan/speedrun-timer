@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { SEGMENT_COLLECTION_NAME } from "../../src/constants";
-import { getCollectionName } from "../../src/server/helpers";
+import { getCollectionName } from "../../src/helpers/server";
 import connectToDatabase from "../../src/util/mongodb";
 
 const deleteSegment = async (req: NextApiRequest, res: NextApiResponse) => {

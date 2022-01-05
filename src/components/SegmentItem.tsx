@@ -10,29 +10,26 @@ import {
 import { getDisplayTime } from "../helpers";
 import { useRunsData } from "../hooks/useRunsData";
 import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
-import { OverUnder } from "./OverUnder";
 import { useAppContext } from "../context/AppContext";
-import { useMemo } from "react";
 import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
+import { SegmentTimes } from "../helpers/server";
+import { OverUnder } from "./OverUnder";
 
 type Props = {
   segment: SegmentRow;
+  segmentTimes?: SegmentTimes;
 };
 
-export const SegmentItem = ({ segment }: Props) => {
+export const SegmentItem = ({ segment, segmentTimes }: Props) => {
   const { name, id } = segment;
-  const { currentRunSegments, startedAtTime } = useAppContext()!;
+  const { bestPastTime, averagePastTime } = segmentTimes ?? {};
 
-  const { bestSegmentTimes = [] } = useRunsData();
+  const { startedAtTime } = useAppContext()!;
+  const { latestRunSegments } = useRunsData();
   const currentSegmentId = useCurrentSegmentId();
 
-  const bestSegmentTime = useMemo(
-    () => bestSegmentTimes.find((r) => r.segmentId === id)?.time,
-    [bestSegmentTimes, id]
-  );
-
   const activeSegmentTime = useActiveSegmentTime();
-  const thisRunSegment = currentRunSegments?.find(
+  const thisRunSegment = latestRunSegments?.find(
     (runSegment) => runSegment.segmentId === id
   );
 
@@ -45,13 +42,24 @@ export const SegmentItem = ({ segment }: Props) => {
     <SegmentDiv isActive={isActive} shouldCollapse={shouldCollapse}>
       <Name>{name}</Name>
       <FlexDiv>
-        {bestSegmentTime && isActive && (
+        {!shouldCollapse && (
           <BestTimeDiv>
-            <BestText>Best</BestText>
-            <div>{getDisplayTime(bestSegmentTime)}</div>
+            <BestText>Avg</BestText>
+            <div>{getDisplayTime(averagePastTime)}</div>
           </BestTimeDiv>
         )}
-        {thisRunSegment?.isCompleted && <OverUnder segmentId={id} />}
+        {bestPastTime && isActive && (
+          <BestTimeDiv>
+            <BestText>Best</BestText>
+            <div>{getDisplayTime(bestPastTime)}</div>
+          </BestTimeDiv>
+        )}
+        {thisRunSegment?.isCompleted && (
+          <OverUnder
+            currentTime={thisRunSegment?.segmentTime}
+            segmentTimes={segmentTimes}
+          />
+        )}
         <TimeDiv>{getDisplayTime(timeToShow)}</TimeDiv>
       </FlexDiv>
     </SegmentDiv>

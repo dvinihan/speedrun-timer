@@ -11,12 +11,6 @@ type AppContextTypes = {
   setRunningTime: (time: number) => void;
   startedAtTime: number;
   setStartedAtTime: (time: number) => void;
-  currentRunSegments: RunSegment[];
-  setCurrentRunSegments: (
-    segments:
-      | RunSegment[]
-      | ((currentRunSegments: RunSegment[]) => RunSegment[])
-  ) => void;
   runType: RunType;
   setRunType: (runType: RunType) => void;
 };
@@ -30,10 +24,6 @@ export const AppContextProvider = ({ children }: { children: any }) => {
   const [startedAtTime, setStartedAtTime] = useState(0);
   const [runType, setRunType] = useState(RunType.ANY_PERCENT);
 
-  const [currentRunSegments, setCurrentRunSegments] = useState<RunSegment[]>(
-    []
-  );
-
   return (
     <AppContext.Provider
       value={{
@@ -45,8 +35,6 @@ export const AppContextProvider = ({ children }: { children: any }) => {
         setRunningTime,
         startedAtTime,
         setStartedAtTime,
-        currentRunSegments,
-        setCurrentRunSegments,
         runType,
         setRunType,
       }}
