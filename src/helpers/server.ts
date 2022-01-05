@@ -1,4 +1,4 @@
-import { Dictionary, groupBy, meanBy, minBy, sumBy } from "lodash";
+import { groupBy, meanBy, minBy, sumBy } from "lodash";
 import { RunType } from "../constants";
 import { RunSegment } from "../types/RunSegment";
 import { SegmentRow } from "../types/SegmentRow";
@@ -9,7 +9,10 @@ export type SegmentTimes = {
   averageTime: number;
 };
 
-export const getBestOverallTime = (allRunSegments: RunSegment[]) => {
+export const getBestOverallTime = (
+  segments: SegmentRow[],
+  allRunSegments: RunSegment[]
+) => {
   const runSegmentsByRunList = Object.values(
     groupBy(allRunSegments, (r) => r.runId)
   );
@@ -20,7 +23,7 @@ export const getBestOverallTime = (allRunSegments: RunSegment[]) => {
         (runSegment) => runSegment.isCompleted && runSegment.segmentTime > 0
       );
 
-      const isRunCompleted = runSegmentsByRunList.length === runSegments.length;
+      const isRunCompleted = runSegments.length === segments.length;
       if (isRunCompleted) {
         const runTime = sumBy(completedRunSegments, (r) => r.segmentTime);
         return Math.min(runTime, bestTime);

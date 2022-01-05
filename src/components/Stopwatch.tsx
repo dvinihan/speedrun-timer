@@ -5,7 +5,6 @@ import styled from "styled-components";
 import { SplitRequestBody } from "../../pages/api/split";
 import { useAppContext } from "../context/AppContext";
 import { getDisplayTime } from "../helpers";
-import { useRunId } from "../hooks/useRunId";
 import { LargeButton, MediumButton } from "../styles/Buttons";
 import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
 import { useSegmentsQuery } from "../hooks/useSegmentsQuery";
@@ -58,11 +57,10 @@ export const Stopwatch = () => {
   } = useAppContext()!;
 
   const { latestRunSegments } = useRunsData();
-  const runId = useRunId();
   const segmentTime = useActiveSegmentTime();
   const currentSegmentId = useCurrentSegmentId();
-
   const { segments } = useSegmentsQuery();
+  const runId = latestRunSegments?.[0]?.runId;
 
   // timer
   useEffect(() => {
@@ -154,6 +152,83 @@ export const Stopwatch = () => {
       },
       // Always refetch after error or success:
       onSettled: () => {
+        // queryClient.invalidateQueries([RUNS_QUERY_KEY, runType]);
+      },
+    }
+  );
+
+  const { mutate: performReset } = useMutation(
+    async () => {
+      setStartedAtTime(Date.now());
+
+      const { data } = await axios.post<SplitRequestBody>(
+        `/api/split?runType=${runType}`,
+        {
+          runId: (runId ?? 0) + 1,
+          segmentId: segments[0].id,
+          segmentTime: 0,
+          isCompleted: false,
+        }
+      );
+      return data;
+    },
+    {
+      onMutate: async () => {
+        // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+        await queryClient.cancelQueries([RUNS_QUERY_KEY, runType]);
+
+        // Snapshot the previous value
+        const previousRunsData = queryClient.getQueryData<RunsApiResponse>([
+          RUNS_QUERY_KEY,
+          runType,
+        ]);
+
+        const emptyRunsData = {
+          bestOverallTime: 0,
+          latestRunSegments: [],
+          segmentTimesList: [],
+        };
+
+        if (!previousRunsData) {
+          return { previousRunsData: emptyRunsData };
+        }
+
+        // Optimistically update to the new value
+        queryClient.setQueryData<RunsApiResponse>(
+          [RUNS_QUERY_KEY, runType],
+          (oldRunsData) => {
+            if (!oldRunsData) return emptyRunsData;
+
+            return {
+              ...oldRunsData,
+              latestRunSegments: [
+                {
+                  runId: (runId ?? 0) + 1,
+                  segmentId: segments[0].id,
+                  segmentTime: 0,
+                  isCompleted: false,
+                },
+              ],
+            };
+          }
+        );
+
+        // Return a context object with the snapshotted value
+        return { previousRunsData };
+      },
+      // If the mutation fails, use the context returned from onMutate to roll back
+      onError: (
+        err,
+        newSplit,
+        context?: { previousRunsData: RunsApiResponse }
+      ) => {
+        queryClient.setQueryData(
+          [RUNS_QUERY_KEY, runType],
+          context?.previousRunsData
+        );
+      },
+      // Always refetch after error or success:
+      onSettled: () => {
         queryClient.invalidateQueries([RUNS_QUERY_KEY, runType]);
       },
     }
@@ -177,12 +252,7 @@ export const Stopwatch = () => {
   const reset = async () => {
     setIsRunning(false);
     setRunningTime(0);
-    performSplit({
-      runId: (runId ?? 0) + 1,
-      segmentId: segments[0].id,
-      segmentTime: 0,
-      isCompleted: false,
-    });
+    performReset();
   };
 
   const split = () => {
@@ -212,30 +282,28 @@ export const Stopwatch = () => {
   );
 
   return (
-    <>
-      <VerticalDiv>
-        <HorizontalDiv>
-          {isRunning ? (
-            <StopButton onClick={stop}>Stop</StopButton>
-          ) : (
-            <StartButton disabled={isFinished} onClick={start}>
-              {runningTime ? "Resume" : "Start"}
-            </StartButton>
-          )}
-          <SplitButton
-            color={isRunning ? "lightgreen" : ""}
-            disabled={!isRunning}
-            onClick={isOnLastSegment ? finish : split}
-          >
-            {isOnLastSegment ? "Finish" : "Split"}
-          </SplitButton>
-        </HorizontalDiv>
-        {isFinished && <Time>Done!</Time>}
-        <Time>{getDisplayTime(runningTime)}</Time>
-        <MediumButton disabled={isRunning} onClick={reset}>
-          Reset
-        </MediumButton>
-      </VerticalDiv>
-    </>
+    <VerticalDiv>
+      <HorizontalDiv>
+        {isRunning ? (
+          <StopButton onClick={stop}>Stop</StopButton>
+        ) : (
+          <StartButton disabled={isFinished} onClick={start}>
+            {runningTime ? "Resume" : "Start"}
+          </StartButton>
+        )}
+        <SplitButton
+          color={isRunning ? "lightgreen" : ""}
+          disabled={!isRunning}
+          onClick={isOnLastSegment ? finish : split}
+        >
+          {isOnLastSegment ? "Finish" : "Split"}
+        </SplitButton>
+      </HorizontalDiv>
+      {isFinished && <Time>Done!</Time>}
+      <Time>{getDisplayTime(runningTime)}</Time>
+      <MediumButton disabled={isRunning} onClick={reset}>
+        Reset
+      </MediumButton>
+    </VerticalDiv>
   );
 };

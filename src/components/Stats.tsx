@@ -13,8 +13,16 @@ export const Stats = () => {
     useRunsData();
 
   const sumOfBestSegments = useMemo(
-    () => sumBy(segmentTimesList, (r) => r.bestPastTime),
-    [segmentTimesList]
+    () =>
+      sumBy(segmentTimesList, (s) => {
+        const latestRunSegment = latestRunSegments.find(
+          (r) => r.segmentId === s.segmentId
+        );
+        return latestRunSegment
+          ? Math.min(latestRunSegment.segmentTime, s.bestPastTime)
+          : s.bestPastTime;
+      }),
+    [latestRunSegments, segmentTimesList]
   );
 
   const bestPossibleTime = useMemo(

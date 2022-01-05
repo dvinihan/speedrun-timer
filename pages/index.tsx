@@ -12,6 +12,7 @@ import { RUNS_QUERY_KEY, RunType } from "../src/constants";
 import { dehydrate, QueryClient } from "react-query";
 import axios, { AxiosResponse } from "axios";
 import { RunsApiResponse } from "./api/runs";
+import { sumBy } from "lodash";
 
 const FlexDiv = styled.div`
   display: flex;
@@ -40,11 +41,12 @@ const StopwatchFlexItem = styled.div`
 const Home: NextPage = () => {
   const { runType, setRunType, isRunning, setRunningTime } = useAppContext()!;
   const { refetch: refetchSegments } = useSegmentsQuery();
-  const { refetchRuns } = useRunsData();
+  const { latestRunSegments, refetchRuns } = useRunsData();
 
   useEffect(() => {
-    refetchRuns();
-  }, [refetchRuns]);
+    const totalTime = sumBy(latestRunSegments, (r) => r.segmentTime);
+    setRunningTime(totalTime);
+  }, [latestRunSegments, setRunningTime]);
 
   const handleRunTypeSelect = (e: any) => {
     setRunType(e.target.value);
