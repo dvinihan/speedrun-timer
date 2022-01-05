@@ -270,14 +270,14 @@ export const Stopwatch = () => {
   };
 
   const isOnLastSegment = useMemo(() => {
-    const lastSegmentId = segments.at(-1)?.id;
+    const lastSegmentId = segments[segments.length - 1]?.id;
     return lastSegmentId ? lastSegmentId === currentSegmentId : false;
   }, [currentSegmentId, segments]);
 
   const isFinished = useMemo(
     () =>
       latestRunSegments.length === segments.length &&
-      latestRunSegments.at(-1)?.isCompleted,
+      latestRunSegments[latestRunSegments.length - 1]?.isCompleted,
     [latestRunSegments, segments.length]
   );
 
