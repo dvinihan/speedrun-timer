@@ -17,10 +17,7 @@ interface SplitRequest extends NextApiRequest {
   body: SplitRequestBody;
 }
 
-const split = async (
-  req: SplitRequest,
-  res: NextApiResponse<RunsApiResponse>
-) => {
+const split = async (req: SplitRequest, res: NextApiResponse) => {
   const { runType } = req.query;
   const { runId } = req.body;
 
@@ -39,8 +36,7 @@ const split = async (
   } else {
     await createNewRun(db, req.body, collectionName);
   }
-  const runData = await getRuns(db, runType);
-  res.json(runData);
+  res.json({});
 };
 
 const updateExistingRun = async (

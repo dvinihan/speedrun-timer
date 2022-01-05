@@ -1,20 +1,22 @@
 import {
-  RunType,
   RUN_SEGMENT_COLLECTION_NAME,
   SEGMENT_COLLECTION_NAME,
 } from "../../src/constants";
 import {
   getBestOverallTime,
-  getBestPossibleTime,
-  getBestSegmentTimes,
   getCollectionName,
-  getOverUnders,
+  getSegmentTimes,
 } from "../server/helpers";
 import { RunSegment } from "../../src/types/RunSegment";
 import { SegmentRow } from "../../src/types/SegmentRow";
 import { Db } from "mongodb";
+import { groupBy } from "lodash";
+import { RunsApiResponse } from "../../pages/api/runs";
 
-export const getRuns = async (db: Db, runType: string | string[]) => {
+export const getRuns = async (
+  db: Db,
+  runType: string | string[]
+): Promise<RunsApiResponse> => {
   const runSegmentsCollectionName = getCollectionName(
     runType,
     RUN_SEGMENT_COLLECTION_NAME
@@ -24,34 +26,21 @@ export const getRuns = async (db: Db, runType: string | string[]) => {
     SEGMENT_COLLECTION_NAME
   );
 
-  const [allRunSegments, segments] = await Promise.all([
+  const [allRunSegmentDocuments, segmentDocuments] = await Promise.all([
     db.collection<RunSegment>(runSegmentsCollectionName).find().toArray(),
     db.collection<SegmentRow>(segmentsCollectionName).find().toArray(),
   ]);
+  const allRunSegments = allRunSegmentDocuments.map((d) => new RunSegment(d));
+  const segments = segmentDocuments.map((d) => new SegmentRow(d));
 
-  const latestOrCurrentRunId = Math.max(...allRunSegments.map((r) => r.runId));
-  const latestOrCurrentRunSegments = allRunSegments.filter(
-    (r) => r.runId === latestOrCurrentRunId
+  const latestRunId = Math.max(...allRunSegments.map((r) => r.runId));
+  const latestRunSegments = allRunSegments.filter(
+    (r) => r.runId === latestRunId
   );
 
-  const bestSegmentTimes = getBestSegmentTimes(allRunSegments);
-
   return {
-    bestPossibleTime: getBestPossibleTime(
-      segments,
-      bestSegmentTimes,
-      latestOrCurrentRunSegments
-    ),
-    bestSegmentTimes,
-    bestOverallTime: getBestOverallTime(allRunSegments, segments),
-    latestRunSegments: latestOrCurrentRunSegments.map((runSegment: any) => {
-      delete runSegment._id;
-      return runSegment;
-    }),
-    overUnders: getOverUnders(
-      allRunSegments,
-      latestOrCurrentRunId,
-      latestOrCurrentRunSegments
-    ),
+    bestOverallTime: getBestOverallTime(allRunSegments),
+    latestRunSegments,
+    segmentTimesList: getSegmentTimes(segments, allRunSegments, latestRunId),
   };
 };

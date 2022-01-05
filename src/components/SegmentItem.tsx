@@ -10,26 +10,23 @@ import {
 import { getDisplayTime } from "../helpers";
 import { useRunsData } from "../hooks/useRunsData";
 import { useActiveSegmentTime } from "../hooks/useActiveSegmentTime";
-import { OverUnder } from "./OverUnder";
 import { useAppContext } from "../context/AppContext";
-import { useMemo } from "react";
 import { useCurrentSegmentId } from "../hooks/useCurrentSegmentId";
+import { SegmentTimes } from "../server/helpers";
+import { OverUnder } from "./OverUnder";
 
 type Props = {
   segment: SegmentRow;
+  segmentTimes?: SegmentTimes;
 };
 
-export const SegmentItem = ({ segment }: Props) => {
+export const SegmentItem = ({ segment, segmentTimes }: Props) => {
   const { name, id } = segment;
+  const { bestPastTime } = segmentTimes ?? {};
+
   const { startedAtTime } = useAppContext()!;
-
-  const { bestSegmentTimes = [], latestRunSegments } = useRunsData();
+  const { latestRunSegments } = useRunsData();
   const currentSegmentId = useCurrentSegmentId();
-
-  const bestSegmentTime = useMemo(
-    () => bestSegmentTimes.find((r) => r.segmentId === id)?.time,
-    [bestSegmentTimes, id]
-  );
 
   const activeSegmentTime = useActiveSegmentTime();
   const thisRunSegment = latestRunSegments?.find(
@@ -45,13 +42,18 @@ export const SegmentItem = ({ segment }: Props) => {
     <SegmentDiv isActive={isActive} shouldCollapse={shouldCollapse}>
       <Name>{name}</Name>
       <FlexDiv>
-        {bestSegmentTime && isActive && (
+        {bestPastTime && isActive && (
           <BestTimeDiv>
             <BestText>Best</BestText>
-            <div>{getDisplayTime(bestSegmentTime)}</div>
+            <div>{getDisplayTime(bestPastTime)}</div>
           </BestTimeDiv>
         )}
-        {thisRunSegment?.isCompleted && <OverUnder segmentId={id} />}
+        {thisRunSegment?.isCompleted && (
+          <OverUnder
+            currentTime={thisRunSegment?.segmentTime}
+            segmentTimes={segmentTimes}
+          />
+        )}
         <TimeDiv>{getDisplayTime(timeToShow)}</TimeDiv>
       </FlexDiv>
     </SegmentDiv>

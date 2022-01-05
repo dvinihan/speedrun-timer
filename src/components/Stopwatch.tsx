@@ -86,7 +86,6 @@ export const Stopwatch = () => {
   }, [isRunning, startedAtTime]);
 
   const { mutate: performSplit } = useMutation(
-    "split",
     async (newSplit: RunSegment) => {
       setStartedAtTime(Date.now());
 
@@ -108,11 +107,9 @@ export const Stopwatch = () => {
         ]);
 
         const emptyRunsData = {
-          bestPossibleTime: 0,
-          bestSegmentTimes: [],
           bestOverallTime: 0,
           latestRunSegments: [],
-          overUnders: [],
+          segmentTimesList: [],
         };
 
         if (!previousRunsData) {
@@ -203,11 +200,16 @@ export const Stopwatch = () => {
   };
 
   const isOnLastSegment = useMemo(() => {
-    const lastSegment = segments.slice(-1)[0];
-    return lastSegment ? lastSegment.id === currentSegmentId : false;
+    const lastSegmentId = segments.at(-1)?.id;
+    return lastSegmentId ? lastSegmentId === currentSegmentId : false;
   }, [currentSegmentId, segments]);
 
-  const isFinished = latestRunSegments.length === segments.length;
+  const isFinished = useMemo(
+    () =>
+      latestRunSegments.length === segments.length &&
+      latestRunSegments.at(-1)?.isCompleted,
+    [latestRunSegments, segments.length]
+  );
 
   return (
     <>

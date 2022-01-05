@@ -1,6 +1,6 @@
 import { getDisplayTime } from "../helpers";
 import styled from "styled-components";
-import { useRunsData } from "../hooks/useRunsData";
+import { SegmentTimes } from "../server/helpers";
 
 const Container = styled.div<{ color: string }>`
   font-weight: 500;
@@ -9,19 +9,16 @@ const Container = styled.div<{ color: string }>`
 `;
 
 type Props = {
-  segmentId: number;
+  currentTime: number;
+  segmentTimes?: SegmentTimes;
 };
 
-export const OverUnder = ({ segmentId }: Props) => {
-  const { overUnders } = useRunsData();
-
-  const diff = overUnders.find(
-    (overUnder) => overUnder.segmentId === segmentId
-  )?.time;
-
-  if (diff === undefined) {
+export const OverUnder = ({ currentTime, segmentTimes }: Props) => {
+  if (!segmentTimes) {
     return null;
   }
+
+  const diff = currentTime - segmentTimes.bestPastTime;
 
   const absoluteValueDiff = Math.abs(diff);
   const operator = diff > 0 ? "+" : "-";

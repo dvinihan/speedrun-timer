@@ -1,100 +1,36 @@
-import { groupBy, minBy, sumBy } from "lodash";
+import { Dictionary, groupBy, meanBy, minBy, sumBy } from "lodash";
 import { RunType } from "../constants";
 import { RunSegment } from "../types/RunSegment";
 import { SegmentRow } from "../types/SegmentRow";
 
-export interface RunSegmentTime {
+export type SegmentTimes = {
   segmentId: number;
-  time: number;
-}
-
-export const getBestSegmentTimes = (
-  allRunSegments: RunSegment[]
-): RunSegmentTime[] => {
-  const completedRunSegments = allRunSegments.filter(
-    (runSegment) => runSegment.isCompleted && runSegment.segmentTime > 0
-  );
-  const groupedTimes = groupBy(
-    completedRunSegments,
-    (runSegment) => runSegment.segmentId
-  );
-  return Object.entries(groupedTimes).map(([runId, runSegments]) => ({
-    segmentId: parseInt(runId),
-    time: Math.min(...runSegments.map((r) => r.segmentTime)),
-  }));
+  bestPastTime: number;
+  averageTime: number;
 };
 
-export const getBestPossibleTime = (
-  segments: SegmentRow[],
-  bestSegmentTimes: RunSegmentTime[],
-  latestRunSegments: RunSegment[]
-) => {
-  let finishedSegmentsTotalTime = 0;
-  let unfinishedSegmentsTotalBestTime = 0;
+export const getBestOverallTime = (allRunSegments: RunSegment[]) => {
+  const runSegmentsByRunList = Object.values(
+    groupBy(allRunSegments, (r) => r.runId)
+  );
 
-  segments.forEach((segment) => {
-    const runSegment = latestRunSegments.find(
-      (r) => r.segmentId === segment.id
-    );
-
-    if (!runSegment || !runSegment.isCompleted) {
-      const bestSegmentTime = bestSegmentTimes.find(
-        (r) => r.segmentId === segment.id
+  const bestTime = runSegmentsByRunList.reduce(
+    (bestTime: number, runSegments: RunSegment[]) => {
+      const completedRunSegments = runSegments.filter(
+        (runSegment) => runSegment.isCompleted && runSegment.segmentTime > 0
       );
-      unfinishedSegmentsTotalBestTime += bestSegmentTime?.time ?? 0;
-    } else {
-      finishedSegmentsTotalTime += runSegment.segmentTime;
-    }
-  });
 
-  return finishedSegmentsTotalTime + unfinishedSegmentsTotalBestTime;
-};
-
-export const getBestOverallTime = (
-  allRunSegments: RunSegment[],
-  segments: SegmentRow[]
-) => {
-  const segmentCount = segments.length;
-
-  const completedRunSegments = allRunSegments.filter(
-    (runSegment) => runSegment.isCompleted && runSegment.segmentTime > 0
-  );
-
-  const groupedRunSegments = groupBy(
-    completedRunSegments,
-    (runSegment) => runSegment.runId
-  );
-
-  const completedRunTimes = Object.values(groupedRunSegments)
-    .filter((runSegmentList) => runSegmentList.length === segmentCount)
-    .map((runSegmentList) =>
-      sumBy(runSegmentList, (runSegment) => runSegment.segmentTime)
-    );
-
-  return Math.min(...completedRunTimes);
-};
-
-export const getOverUnders = (
-  allRunSegments: RunSegment[],
-  latestOrCurrentRunId: number,
-  latestOrCurrentRunSegments: RunSegment[]
-): RunSegmentTime[] => {
-  const allPastRunSegments = allRunSegments.filter(
-    (runSegment) =>
-      runSegment.runId !== latestOrCurrentRunId && runSegment.isCompleted
-  );
-
-  return latestOrCurrentRunSegments.reduce(
-    (agg: RunSegmentTime[], runSegment) => {
-      const pastRunSegments = allPastRunSegments.filter(
-        (r) => r.segmentId === runSegment.segmentId
-      );
-      const bestPastSegment = minBy(pastRunSegments, (r) => r.segmentTime);
-      const diff = runSegment.segmentTime - (bestPastSegment?.segmentTime ?? 0);
-      return [...agg, { segmentId: runSegment.segmentId, time: diff }];
+      const isRunCompleted = runSegmentsByRunList.length === runSegments.length;
+      if (isRunCompleted) {
+        const runTime = sumBy(completedRunSegments, (r) => r.segmentTime);
+        return Math.min(runTime, bestTime);
+      }
+      return bestTime;
     },
-    []
+    Number.MAX_SAFE_INTEGER
   );
+
+  return bestTime === Number.MAX_SAFE_INTEGER ? 0 : bestTime;
 };
 
 export const getCollectionName = (
@@ -108,4 +44,27 @@ export const getCollectionName = (
   const runType =
     Object.values(RunType).find((type) => type === runTypeString) ?? "";
   return `${collectionType}_${runType}`;
+};
+
+export const getSegmentTimes = (
+  segments: SegmentRow[],
+  allRunSegments: RunSegment[],
+  latestRunId: number
+): SegmentTimes[] => {
+  const runSegmentsBySegment = groupBy(allRunSegments, (s) => s.segmentId);
+
+  return segments.map((segment) => {
+    const runSegments = runSegmentsBySegment[segment.id.toString()];
+    return {
+      segmentId: segment.id,
+      bestPastTime:
+        minBy(
+          runSegments.filter(
+            (r) => r.segmentTime > 0 && r.runId !== latestRunId
+          ),
+          (r) => r.segmentTime
+        )?.segmentTime ?? 0,
+      averageTime: meanBy(runSegments, (r) => r.segmentTime),
+    };
+  });
 };
