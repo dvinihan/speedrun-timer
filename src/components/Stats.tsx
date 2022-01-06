@@ -18,7 +18,7 @@ export const Stats = () => {
         const latestRunSegment = latestRunSegments.find(
           (r) => r.segmentId === s.segmentId
         );
-        return latestRunSegment
+        return latestRunSegment?.isCompleted
           ? Math.min(latestRunSegment.segmentTime, s.bestPastTime)
           : s.bestPastTime;
       }),
@@ -32,12 +32,11 @@ export const Stats = () => {
           (r) => r.segmentId === segmentTimes.segmentId
         );
 
-        const newTime =
-          !runSegment || !runSegment.isCompleted
-            ? // if not yet completed in current run, use best time
-              segmentTimes.bestPastTime
-            : // if completed in current run, use actual time
-              runSegment.segmentTime;
+        const newTime = !runSegment?.isCompleted
+          ? // if not yet completed in current run, use best time
+            segmentTimes.bestPastTime
+          : // if completed in current run, use actual time
+            runSegment.segmentTime;
 
         return totalTime + newTime;
       }, 0),

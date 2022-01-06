@@ -19,9 +19,7 @@ export const getBestOverallTime = (
 
   const bestTime = runSegmentsByRunList.reduce(
     (bestTime: number, runSegments: RunSegment[]) => {
-      const completedRunSegments = runSegments.filter(
-        (runSegment) => runSegment.isCompleted && runSegment.segmentTime > 0
-      );
+      const completedRunSegments = runSegments.filter((r) => r.isCompleted);
 
       const isRunCompleted = runSegments.length === segments.length;
       if (isRunCompleted) {
@@ -58,15 +56,15 @@ export const getSegmentTimes = (
 
   return segments.map((segment) => {
     const runSegments = runSegmentsBySegment[segment.id.toString()];
-    const pastRunSegments = runSegments.filter(
-      (r) => r.segmentTime > 0 && r.runId !== latestRunId
+    const completedPastRunSegments = runSegments.filter(
+      (r) => r.runId !== latestRunId && r.isCompleted
     );
 
     return {
       segmentId: segment.id,
       bestPastTime:
-        minBy(pastRunSegments, (r) => r.segmentTime)?.segmentTime ?? 0,
-      averagePastTime: meanBy(pastRunSegments, (r) => r.segmentTime),
+        minBy(completedPastRunSegments, (r) => r.segmentTime)?.segmentTime ?? 0,
+      averagePastTime: meanBy(completedPastRunSegments, (r) => r.segmentTime),
     };
   });
 };
